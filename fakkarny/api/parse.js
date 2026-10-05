@@ -75,6 +75,35 @@ const BREAKDOWN_SCHEMA = {
   additionalProperties: false,
 };
 
+const REVIEW_SCHEMA = {
+  type: "object",
+  properties: {
+    feedback: { type: "string", description: "2-3 short lines in spoken Egyptian Arabic, separated by newlines" },
+    plan: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          taskId: { type: ["string", "null"], description: "id of an existing task carried to tomorrow, or null for a new one" },
+          title: { type: "string" },
+          time: { type: ["string", "null"], description: "HH:MM 24h or null" },
+          priority: { type: "string", enum: ["normal", "high"] },
+        },
+        required: ["taskId", "title", "time", "priority"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["feedback", "plan"],
+  additionalProperties: false,
+};
+
+const REVIEW_SYSTEM = `You are the end-of-day coach of "فكرني", an Egyptian app that fights procrastination. You get today's done and missed tasks, goals, prayers, snooze count, and the user's own notes on what went well and what could be better.
+Write:
+- feedback: 2-3 short lines in spoken Egyptian Arabic (like a friend texting, no MSA, no emoji, no slogans). Line 1: one specific thing that went well today. Line 2: one concrete thing to do differently tomorrow, based on what you see (snoozing, overdue tasks, missed prayers, the user's notes). Optional line 3: one short push.
+- plan: tomorrow's plan, max 6 items. Include the missed tasks the user chose to carry (use their taskId) and anything new the user's notes clearly ask for (taskId null). Order by priority. Give realistic times: important or hard things in the morning, nothing between 00:00 and 07:00, keep a task's existing time if it had one, leave time null for small anytime things. Titles in short Egyptian Arabic.
+Never invent tasks that are not implied by the input.`;
+
 const PARSE_SYSTEM = `You are the brain of "فكرني", an Egyptian reminders app. The user dictated a voice note (speech-to-text, may be messy, Egyptian dialect, may mix English).
 Extract every separate thing they want to be reminded of as a task.
 Rules:
@@ -97,15 +126,21 @@ export default async function handler(req, res) {
   if (!KEY) return res.status(503).json({ error: "no_api_key" });
 
   const { mode = "parse", text = "", now, weekday, task, deadline, existing = [] } = req.body || {};
+  if (!["parse", "breakdown", "review"].includes(mode)) return res.status(400).json({ error: "bad_mode" });
   if (mode === "parse" && (!text || text.length > 4000)) return res.status(400).json({ error: "bad_text" });
   const open = (Array.isArray(existing) ? existing : []).slice(0, 60)
     .map((t) => `${t.id} | ${String(t.title || "").slice(0, 80)} | ${t.date || "-"} ${t.time || ""}`).join("\n");
 
   const context = `Current local date/time: ${now} (${weekday}).`;
-  const isBreakdown = mode === "breakdown";
-  const user = isBreakdown
+  const isBreakdown = mode === "breakdown", isReview = mode === "review";
+  const { day = {} } = req.body || {};
+  const user = isReview
+    ? `${context}\nToday's review data (JSON):\n${JSON.stringify(day).slice(0, 6000)}`
+    : isBreakdown
     ? `${context}\nBig task: ${task}\nReal deadline: ${deadline}`
     : `${context}\nExisting tasks (id | title | date time):\n${open || "none"}\n\nVoice note:\n${text}`;
+  const system = isReview ? REVIEW_SYSTEM : isBreakdown ? BREAKDOWN_SYSTEM : PARSE_SYSTEM;
+  const schema = isReview ? REVIEW_SCHEMA : isBreakdown ? BREAKDOWN_SCHEMA : PARSE_SCHEMA;
 
   try {
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -117,12 +152,12 @@ export default async function handler(req, res) {
         reasoning_effort: "medium",
         max_completion_tokens: 4000,
         messages: [
-          { role: "system", content: isBreakdown ? BREAKDOWN_SYSTEM : PARSE_SYSTEM },
+          { role: "system", content: system },
           { role: "user", content: user },
         ],
         response_format: {
           type: "json_schema",
-          json_schema: { name: isBreakdown ? "breakdown" : "parse", strict: true, schema: isBreakdown ? BREAKDOWN_SCHEMA : PARSE_SCHEMA },
+          json_schema: { name: mode, strict: true, schema },
         },
       }),
     });

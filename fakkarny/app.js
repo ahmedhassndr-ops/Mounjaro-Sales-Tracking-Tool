@@ -39,7 +39,7 @@
     return {
       v: 1, onboarded: false,
       profile: { name: '', coach: 'sarcastic', sound: true, notif: false, hideInstall: false },
-      tasks: [], goals: [], people: [],
+      tasks: [], goals: [], people: [], reviews: {},
       stats: { xp: 0, days: {}, best: 0, total: 0, onTime: 0, killed: 0, calls: 0, voice: 0, focus: 0, goalHits: 0, bigDone: 0, snoozes: {}, badges: [] }
     };
   }
@@ -369,7 +369,7 @@
     }
     h += '</div>';
 
-    if (isToday) h += nudgesHTML();
+    if (isToday) h += eodCardHTML() + nudgesHTML();
 
     if (!all.length) {
       h += '<div class="empty"><div class="big">🎙️</div><b>' + (isToday ? 'يومك لسه فاضي' : 'مفيش حاجة ' + dayLabel(k)) + '</b>دوس المايك اللي تحت وقول اللي وراك<br><span class="ex">"فكرني بكرة الساعة ٣ عندي ميعاد، وأكلم ماما بالليل"</span></div>';
@@ -590,6 +590,9 @@
     h += '<div class="sec"><h3>الأوسمة <span class="cnt">' + ar(S.stats.badges.length) + '/' + ar(BADGES.length) + '</span></h3></div><div class="badges">' +
       BADGES.map(function (b) { var got = S.stats.badges.indexOf(b.id) >= 0; return '<div class="badge ' + (got ? 'got' : 'locked') + '"><div class="e">' + b.e + '</div><b>' + b.t + '</b><small>' + b.d + '</small></div>'; }).join('') + '</div>';
     h += '<div class="sec"><h3>المدرب بتاعك</h3></div><div class="seg">' + Object.keys(COACHES).map(function (k) { var c = COACHES[k]; return '<button class="' + (S.profile.coach === k ? 'on' : '') + '" data-act="coach-set" data-k="' + k + '"><span class="e">' + c.face + '</span>' + c.name + '</button>'; }).join('') + '</div>';
+    var rvKeys = Object.keys(S.reviews || {}).sort().reverse().slice(0, 7);
+    h += '<div class="sec"><h3>مراجعاتك</h3></div><button class="rowbtn" data-act="eod"><span class="e">🌙</span><span>' + (S.reviews[today()] ? 'خطة بكرة' : 'قفّل يومك') + '</span><small>' + (S.reviews[today()] ? 'اتعملت' : 'دقيقة') + '</small></button>' +
+      rvKeys.map(function (k) { var r = S.reviews[k]; return '<div class="rv-hist"><b>' + dayLabel(k) + '</b><span>' + ar(r.done) + '/' + ar(r.total) + '</span><small>' + esc(r.better || r.good || (r.feedback || '').split('\n')[0]) + '</small></div>'; }).join('');
     h += '<div class="sec"><h3>الإعدادات</h3></div>' +
       '<button class="rowbtn" data-act="share"><span class="e">📣</span><span>ابعت مستواك لصحابك</span><small>تحدّاهم</small></button>' +
       '<button class="rowbtn" data-act="notif"><span class="e">🔔</span><span>الإشعارات</span><small>' + notifLabel() + '</small></button>' +
@@ -605,6 +608,113 @@
   function notifLabel() {
     if (!('Notification' in window)) return isIOS && !isStandalone ? 'ضيفه للشاشة الأول' : 'مش مدعومة';
     return Notification.permission === 'granted' ? 'شغالة' : Notification.permission === 'denied' ? 'مقفولة من الإعدادات' : 'دوس وفعّلها';
+  }
+
+  // ================= end-of-day review =================
+  // Close the day: what got done, what slipped (carry to tomorrow or drop), two honest notes,
+  // then an AI coach writes feedback and a plan for tomorrow the user can accept in one tap.
+  var EOD_HOUR = 19;
+  function dayData(k) {
+    var all = dayTasks(k).concat(k === today() ? overdueList() : []);
+    var seen = {}; all = all.filter(function (t) { if (seen[t.id]) return false; seen[t.id] = 1; return true; });
+    var pg = S.goals.filter(isPrayerGoal)[0], pm = pg && pg.marks && pg.marks[k] ? pg.marks[k] : {};
+    return {
+      done: all.filter(function (t) { return isDone(t, k); }),
+      missed: all.filter(function (t) { return !isDone(t, k); }),
+      goals: S.goals.filter(function (g) { return !isPrayerGoal(g); }).map(function (g) { return { title: g.title, count: gCount(g, k), target: g.target, period: g.period }; }),
+      prayers: pg ? PRAYERS.map(function (p) { return { name: p[1], done: !!pm[p[0]] }; }) : null,
+      snoozes: S.stats.snoozes[k] || 0
+    };
+  }
+  function eodCardHTML() {
+    if (new Date().getHours() < EOD_HOUR) return '';
+    if (S.reviews[today()]) return '<div class="nudge eod done"><div class="e">🌙</div><div class="t">قفلت يومك. <b>خطة بكرة جاهزة.</b></div><button class="chunky" data-act="eod">شوفها</button></div>';
+    return '<div class="nudge eod"><div class="e">🌙</div><div class="t"><b>قفّل يومك</b><br><small>شوف عملت إيه، وخطّط لبكرة في دقيقة</small></div><button class="chunky" data-act="eod">يلا</button></div>';
+  }
+  var eodChoice = {};
+  function openEOD() {
+    var k = today(), rv = S.reviews[k];
+    if (rv) return showEODResult(rv);
+    var d = dayData(k); eodChoice = {};
+    d.missed.forEach(function (t) { eodChoice[t.id] = t.repeat !== 'none' ? 'keep' : 'tomorrow'; });
+    var total = d.done.length + d.missed.length, h = '<h2>يومك النهارده</h2>';
+    h += '<div class="eod-stats"><div><b>' + ar(d.done.length) + '<small> من ' + ar(total) + '</small></b><span>خلّصت</span></div>' +
+      (d.prayers ? '<div><b>' + ar(d.prayers.filter(function (p) { return p.done; }).length) + '<small> من ٥</small></b><span>صلاة</span></div>' : '') +
+      '<div><b>' + ar(d.snoozes) + '</b><span>أجّلت</span></div></div>';
+    if (d.done.length) h += '<div class="sec"><h3>خلّصت</h3></div><div class="eod-list">' + d.done.map(function (t) { return '<div class="eod-row ok"><span class="c">✓</span><span>' + esc(t.title) + '</span></div>'; }).join('') + '</div>';
+    if (d.missed.length) h += '<div class="sec"><h3>ماخلصتش</h3></div><div class="eod-list">' + d.missed.map(function (t) {
+      return '<div class="eod-row" data-id="' + t.id + '"><span>' + esc(t.title) + '</span>' + (t.repeat !== 'none' ? '<small>بتتكرر</small>' : '<button class="tag rep" data-eod="cycle">بكرة</button>') + '</div>';
+    }).join('') + '</div>';
+    if (d.goals.length) h += '<div class="sec"><h3>أهدافك</h3></div><div class="eod-list">' + d.goals.map(function (g) { return '<div class="eod-row' + (g.count >= g.target ? ' ok' : '') + '"><span>' + esc(g.title) + '</span><small>' + ar(g.count) + '/' + ar(g.target) + '</small></div>'; }).join('') + '</div>';
+    h += '<div class="field" style="margin-top:14px"><label>إيه اللي مشي كويس؟</label><textarea id="eGood" rows="2" placeholder="حتى لو حاجة صغيرة"></textarea></div>' +
+      '<div class="field"><label>إيه اللي كان ممكن يبقى أحسن؟</label><textarea id="eBetter" rows="2" placeholder="بصراحة، محدش هيشوفها غيرك"></textarea></div>' +
+      '<div class="acts"><button class="act pri full" id="eGo">قفّل اليوم وخطّط لبكرة</button></div>';
+    openSheet(h, function (root) {
+      $$('[data-eod=cycle]', root).forEach(function (b) {
+        b.onclick = function () {
+          var id = b.closest('.eod-row').dataset.id, o = ['tomorrow', 'drop', 'keep'], nx = o[(o.indexOf(eodChoice[id]) + 1) % 3];
+          eodChoice[id] = nx; b.textContent = { tomorrow: 'بكرة', drop: 'امسحها', keep: 'سيبها' }[nx]; b.className = 'tag ' + (nx === 'drop' ? 'late' : nx === 'keep' ? '' : 'rep');
+        };
+      });
+      $('#eGo', root).onclick = function () { closeDay(d, $('#eGood').value.trim(), $('#eBetter').value.trim(), this); };
+    });
+  }
+  function closeDay(d, good, better, btn) {
+    var k = today(), tmr = dk(addDays(new Date(), 1));
+    btn.innerHTML = '<span class="dotsl"><i></i><i></i><i></i></span>';
+    var carry = [];
+    d.missed.forEach(function (t) {
+      var c = eodChoice[t.id];
+      if (c === 'drop') S.tasks = S.tasks.filter(function (x) { return x.id !== t.id; });
+      else if (c === 'tomorrow') carry.push(t);
+    });
+    var payload = {
+      done: d.done.map(function (t) { return t.title; }),
+      carried: carry.map(function (t) { return { id: t.id, title: t.title, time: t.time, priority: t.priority || 'normal', notes: (t.notes || '').slice(0, 200) }; }),
+      tomorrowAlready: dayTasks(tmr).map(function (t) { return { title: t.title, time: timeOn(t, tmr) }; }),
+      goals: d.goals, prayers: d.prayers, snoozes: d.snoozes, wentWell: good, couldBeBetter: better
+    };
+    var now = new Date();
+    postAI({ mode: 'review', day: payload, now: now.toString(), weekday: WDF[now.getDay()] }).then(function (r) {
+      var plan = r && Array.isArray(r.plan) ? r.plan : carry.map(function (t) { return { taskId: t.id, title: t.title, time: t.time, priority: t.priority || 'normal' }; });
+      var fb = r && r.feedback ? r.feedback : localFeedback(d);
+      var rv = { date: k, done: d.done.length, total: d.done.length + d.missed.length, good: good, better: better, feedback: fb, plan: plan, applied: false };
+      S.reviews[k] = rv;
+      addXP(15, innerWidth / 2, innerHeight / 2); logActivity(1); save(); render();
+      showEODResult(rv);
+    });
+  }
+  function localFeedback(d) {
+    var n = d.done.length, m = d.missed.length;
+    var a = n ? 'خلّصت ' + ar(n) + (n === 1 ? ' حاجة' : ' حاجات') + ' النهارده، ودي بداية.' : 'النهارده مخلّصتش حاجة، بس إنك قاعد تراجع ده في حد ذاته خطوة.';
+    var b = d.snoozes >= 2 ? 'أجّلت ' + ar(d.snoozes) + ' مرات. بكرة ابدأ بأتقل حاجة الصبح قبل ما تفتح الموبايل.' : m ? 'بكرة ابدأ بأول حاجة في الخطة قبل أي حاجة تانية.' : 'كمّل بنفس الشكل بكرة.';
+    return a + '\n' + b;
+  }
+  function showEODResult(rv) {
+    var tmr = dk(addDays(new Date(parseDk(rv.date)), 1));
+    var h = '<h2>خطة بكرة</h2><div class="eod-fb">' + esc(rv.feedback).replace(/\n/g, '<br>') + '</div>';
+    if (rv.plan.length) {
+      h += '<div class="eod-list" style="margin-top:12px">' + rv.plan.map(function (p, i) {
+        return '<div class="eod-row plan"><span class="n">' + ar(i + 1) + '</span><span>' + esc(p.title) + '</span>' + (p.priority === 'high' ? '<span class="tag hi">مهم</span>' : '') + '<small>' + (p.time ? fmtTime(p.time) : 'أي وقت') + '</small></div>';
+      }).join('') + '</div>';
+    } else h += '<p style="color:var(--mute);margin-top:12px">مفيش حاجة متشالة لبكرة. قول اللي وراك بالمايك.</p>';
+    h += '<div class="acts">' + (rv.applied ? '<button class="act full" data-x="close">تمام</button>' : '<button class="act pri full" data-x="apply">اعتمد الخطة</button><button class="act full" data-x="close">بعدين</button>') + '</div>';
+    openSheet(h, function (root) {
+      $$('[data-x]', root).forEach(function (b) {
+        b.onclick = function () {
+          if (b.dataset.x === 'apply') {
+            rv.plan.forEach(function (p) {
+              var t = p.taskId && findTask(p.taskId);
+              if (t) { if (t.repeat === 'none') t.date = tmr; t.time = p.time || t.time; t.priority = p.priority; }
+              else S.tasks.push(newTask({ title: p.title, date: tmr, time: p.time, priority: p.priority }));
+            });
+            rv.applied = true; save(); scheduleNotifs(); render(); burst(innerWidth / 2, innerHeight / 3, 80); sfx('level');
+            toast('🌙', 'الخطة اتحطت في بكرة. تصبح على خير.');
+          }
+          closeSheet();
+        };
+      });
+    });
   }
 
   // ================= sheets =================
@@ -802,6 +912,7 @@
       case 'toggle-done': showDone = !showDone; renderToday(); break;
       case 'kill-all': overdueList().forEach(function (t) { t.date = dk(addDays(new Date(), 1)); t.snoozes++; }); S.stats.snoozes[today()] = (S.stats.snoozes[today()] || 0) + 1; save(); render(); toast('😴', say('snooze')); break;
       case 'go-me': switchView('me'); break;
+      case 'eod': openEOD(); break;
       case 'install': installSheet(); break;
       case 'focus': { var ft = findTask(id); if (ft) openFocus(ft); break; }
       case 'called': { var p = S.people.filter(function (x) { return x.id === id; })[0]; if (p) called(p, b); break; }
@@ -1135,6 +1246,8 @@
       });
     });
     schedulePrayers();
+    var eod = new Date(); eod.setHours(21, 30, 0, 0); var ems = eod.getTime() - now;
+    if (ems > 0 && S.tasks.length) timers.push(setTimeout(function () { if (S.reviews[today()]) return; notify('🌙 قفّل يومك', 'دقيقة تراجع فيها النهارده وتخطط لبكرة', 'eod'); if (document.visibilityState === 'visible') { toast('🌙', '<b>قفّل يومك</b> وخطط لبكرة'); render(); } }, ems));
   }
   function schedulePrayers() {
     var pg = S.goals.filter(isPrayerGoal)[0]; if (!pg) return;
