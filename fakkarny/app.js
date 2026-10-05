@@ -45,7 +45,12 @@
   }
   var S;
   try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); }
-  (function migrate() { var f = fresh(); for (var k in f) if (S[k] == null) S[k] = f[k]; for (var j in f.stats) if (S.stats[j] == null) S.stats[j] = f.stats[j]; for (var p in f.profile) if (S.profile[p] == null) S.profile[p] = f.profile[p]; })();
+  (function migrate() { var f = fresh(); for (var k in f) if (S[k] == null) S[k] = f[k]; for (var j in f.stats) if (S.stats[j] == null) S.stats[j] = f.stats[j]; for (var p in f.profile) if (S.profile[p] == null) S.profile[p] = f.profile[p];
+    // drop the old tutorial tasks: they looked like the user's own tasks
+    var DEMO = ['اسحبني يمين لما تخلّص', 'دوس المايك وقول: فكرني بكرة الساعة ٥', 'اسحبني شمال لو عايز تأجّل (بس متتعودش)', 'دوس المايك وجرّب تقول: فكرني بكرة…'];
+    var n0 = S.tasks.length; S.tasks = S.tasks.filter(function (t) { return DEMO.indexOf(t.title) < 0; });
+    if (S.tasks.length !== n0) try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { }
+  })();
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
 
   // ================= coach =================
@@ -64,7 +69,7 @@
       snooze: ['أجّلتها تاني؟ ماشي، أنا بعدّ.', 'التأجيل مش هيخليها تختفي يا {name}.', 'ماشي، بس المرة الجاية مش هعدّيها.'],
       voice: ['تمام، كتبت {n}. يلا بقى نفّذ.', 'كتبتهم. أنا هفكّرك، والباقي عليك.'],
       ping: ['يلا يا {name}، ده وقتها.', 'جه وقتها. ومتقوليش خمس دقايق.'],
-      supply: ['{item} اللي دفعت فيه {price} جنيه قاعد على الرف بيعيط.', 'فاضل {left} من {item}، والصلاحية بتجري أسرع منك.', 'لو {item} بيتاخد بالبص عليه كان زمانك خلّصت العلبة.', '{item} اللي على الرف تمنه {money} جنيه. ولا هو ديكور؟', 'بقالك {miss} أيام ناسي {item}. هو اللي هيشربك؟']
+      skipped: ['بقالك {miss} أيام مش بتعمل "{task}". هو كان تذكير ولا نكتة؟', '"{task}" بقاله {miss} أيام مستنيك. أنا زهقت قبله.', 'إنت اللي قلت "{task}" كل يوم، وبقالك {miss} أيام بتعدّيه. بنضحك على مين؟']
     },
     mom: {
       empty: ['يومك فاضي يا حبيبي؟ قولّي ناوي على إيه وأنا أفتكرلك.', 'مفيش حاجة النهارده؟ طب اشرب مية الأول.'],
@@ -75,7 +80,7 @@
       snooze: ['ماشي يا حبيبي، بس متنساش.', 'خد راحتك، هفكّرك تاني.'],
       voice: ['حاضر يا قلبي، كتبتلك {n} ومش هسيبك تنساهم.'],
       ping: ['يا حبيبي جه وقتها.', 'متنساش يا قلبي.'],
-      supply: ['يا حبيبي {item} اللي جبته لسه فيه {left}، خده عشان خاطري.', 'بقالك {miss} أيام مخدتش {item}. صحتك أهم من أي حاجة.']
+      skipped: ['يا حبيبي "{task}" بقاله {miss} أيام مستنيك. النهارده بس، عشان خاطري.', 'بقالك {miss} أيام ناسي "{task}". مش مشكلة، نبدأ من النهارده.']
     },
     sergeant: {
       empty: ['مفيش مهام؟ إنت مش في أجازة. دوس المايك حالًا.'],
@@ -86,13 +91,12 @@
       snooze: ['تأجيل؟ هتتسجل عليك.', 'مرة واحدة بس.'],
       voice: ['اتسجل {n} أوامر. نفّذ من دلوقتي.'],
       ping: ['الوقت جه. اتحرك.'],
-      supply: ['{item}: فاتك {miss} جرعات. الجرعة بتتاخد في ميعادها. نفّذ.', 'فاضل {left} من {item}. مفيش علبة بتخلص لوحدها.']
+      skipped: ['"{task}": {miss} أيام غياب. ده تقصير. نفّذ النهارده.']
     }
   };
   function say(key, vars) {
     var set = LINES[S.profile.coach] || LINES.sarcastic;
     var pool = set[key] || LINES.sarcastic[key] || [''];
-    if (vars && vars.price == null) pool = pool.filter(function (l) { return l.indexOf('{price}') < 0 && l.indexOf('{money}') < 0; }) || pool;
     var s = pick(pool.length ? pool : ['']);
     vars = vars || {}; vars.name = S.profile.name || 'باشا';
     return s.replace(/\{(\w+)\}/g, function (_, k) { return vars[k] != null ? (typeof vars[k] === 'number' ? ar(vars[k]) : vars[k]) : ''; });
@@ -212,32 +216,22 @@
     ['عام', 'بفكّرك بـ{task}']
   ];
 
-  // ---- supplies: a box of pills/doses that should actually get finished ----
-  function makeSupply(x, title) {
-    if (!x) return null;
-    var total = parseInt(x.count != null ? x.count : x.total, 10);
-    if (!(total > 0)) return null;
-    var price = x.price != null && +x.price > 0 ? +x.price : null;
-    var item = (x.item || x.name || title || '').replace(/^(آخد|اخد|أخد)\s+/, '').trim();
-    return { name: item, total: total, left: x.left != null ? clamp(+x.left, 0, total) : total, price: price };
-  }
-  function supplyMissed(t) {
-    if (!t.supply || !t.date) return 0;
-    var n = 0, d = parseDk(t.date), end = parseDk(today());
-    for (var i = 0; i < 60 && d < end; i++, d = addDays(d, 1)) { var k = dk(d); if (occursOn(t, k) && !isDone(t, k)) n++; }
+  // ---- repeating things you keep skipping: count the misses in a row, ending yesterday ----
+  function missedInRow(t) {
+    if (!t.repeat || t.repeat === 'none' || !t.date) return 0;
+    var n = 0, d = addDays(parseDk(today()), -1), start = parseDk(t.date);
+    for (var i = 0; i < 60 && d >= start; i++, d = addDays(d, -1)) {
+      var k = dk(d); if (!occursOn(t, k)) continue;
+      if (isDone(t, k)) break; n++;
+    }
     return n;
-  }
-  function supplyMoney(sp, n) { return sp.price ? Math.round(sp.price / sp.total * n) : null; }
-  function supplyVars(t) {
-    var sp = t.supply;
-    var nm = sp.name || 'علبة'; return { item: nm.indexOf('ال') === 0 ? nm : 'ال' + nm, left: sp.left, price: sp.price, money: supplyMoney(sp, sp.left), miss: supplyMissed(t) };
   }
 
   function newTask(o) {
     return {
       id: uid(), title: o.title || 'تذكير', emoji: o.emoji || '✨', cat: o.category || o.cat || 'other',
       date: o.date || null, time: o.time || null, repeat: o.repeat || 'none', person: o.person || null,
-      isBig: !!o.isBig, steps: o.steps || [], notes: o.notes || '', priority: o.priority === 'high' ? 'high' : 'normal', supply: o.supply && o.supply.total ? o.supply : makeSupply(o.supply, o.title), send: o.send && o.send.to !== undefined && o.send.phone !== undefined && o.send.text ? o.send : makeSend(o.send), created: Date.now(), snoozes: 0,
+      isBig: !!o.isBig, steps: o.steps || [], notes: o.notes || '', priority: o.priority === 'high' ? 'high' : 'normal', send: o.send && o.send.to !== undefined && o.send.phone !== undefined && o.send.text ? o.send : makeSend(o.send), created: Date.now(), snoozes: 0,
       doneAt: null, doneDates: {}, over: {}, skip: {}, xpGot: {}
     };
   }
@@ -249,7 +243,6 @@
     var key = t.repeat !== 'none' ? k : 'x';
     if (done) {
       if (t.repeat !== 'none') delete t.doneDates[k]; else t.doneAt = null;
-      if (t.supply) t.supply.left = Math.min(t.supply.total, t.supply.left + 1);
       var g = t.xpGot[key] || 10; addXP(-g); delete t.xpGot[key];
       S.stats.total = Math.max(0, S.stats.total - 1); logActivity(-1);
       save(); render(); return;
@@ -265,10 +258,6 @@
     if (t.isBig) { xp += 20; S.stats.bigDone++; }
     if (t.repeat !== 'none') t.doneDates[k] = Date.now(); else t.doneAt = Date.now();
     t.xpGot[key] = xp;
-    if (t.supply) {
-      t.supply.left = Math.max(0, t.supply.left - 1);
-      if (!t.supply.left) { why = 'خلّصت علبة ' + (t.supply.name.indexOf('ال') === 0 ? t.supply.name : 'ال' + t.supply.name) + ' كلها'; xp += 30; t.xpGot[key] = xp; t.repeat = 'none'; t.doneAt = Date.now(); }
-    }
     S.stats.total++; logActivity(1);
     if (t.person) { var pp = findPerson(t.person); if (pp) { pp.last = Date.now(); S.stats.calls++; } }
     addXP(xp, cx, cy - 20);
@@ -373,7 +362,7 @@
     if (!done && tm && k === today()) { var p = tm.split(':'), due = new Date(); due.setHours(+p[0], +p[1]); var diff = due - Date.now(); if (diff < 30 * 60000 && diff > -60 * 60000) nowCls = ' now'; }
     var tags = '';
     if (t.priority === 'high' && !done) tags += '<span class="tag hi">مهم</span>';
-    if (t.supply) { var sm = supplyMoney(t.supply, t.supply.left); tags += '<span class="tag sup">فاضل ' + ar(t.supply.left) + ' من ' + ar(t.supply.total) + (sm ? ' • ' + ar(sm) + ' ج على الرف' : '') + '</span>'; }
+    var miss = !done ? missedInRow(t) : 0; if (miss >= 2) tags += '<span class="tag late">فاتك ' + ar(miss) + ' مرات</span>';
     if (t.send && !done) tags += '<button class="tag wa" data-act="wa">ابعت لـ' + esc(t.send.to || 'حد') + '</button>';
     if (late) tags += '<span class="tag late">متأخرة من ' + dayLabel(t.date) + '</span>';
     if (tm) tags += '<span class="tag time">' + fmtTime(tm) + '</span>';
@@ -403,8 +392,9 @@
     var pct = all.length ? doneN / all.length : 0;
     var pending = all.filter(function (t) { return !isDone(t, k); });
 
-    var coachLine, roast = isToday ? S.tasks.filter(function (t) { return t.supply && t.supply.left > 0 && supplyMissed(t) >= 2; })[0] : null;
-    if (roast) coachLine = say('supply', supplyVars(roast));
+    var coachLine, roast = null;
+    if (isToday) S.tasks.forEach(function (t) { var m = missedInRow(t); if (m >= 2 && (!roast || m > roast.m)) roast = { t: t, m: m }; });
+    if (roast) coachLine = say('skipped', { task: roast.t.title, miss: roast.m });
     else if (!all.length) coachLine = say('empty');
     else if (!pending.length) coachLine = say('allDone');
     else if (od.length) coachLine = say('overdue', { n: od.length, task: od[0].title });
@@ -435,6 +425,7 @@
       h += '<div class="empty"><div class="big">🎙️</div><b>' + (isToday ? 'يومك لسه فاضي' : 'مفيش حاجة ' + dayLabel(k)) + '</b>دوس المايك اللي تحت وقول اللي وراك<br><span class="ex">"فكرني بكرة الساعة ٣ عندي ميعاد، وأكلم ماما بالليل"</span></div>';
     }
     var idx = 0;
+    if (isToday && all.length && !S.profile.tipSwipe) h += '<div class="tip"><span>اسحب أي مهمة <b>يمين</b> لما تخلّصها، و<b>شمال</b> لو هتأجّلها. ودوس عليها تعدّلها.</span><button data-act="tip-ok">فهمت</button></div>';
     var odP = od.filter(function (t) { return !isDone(t, k); });
     if (odP.length) {
       h += '<div class="sec"><h3>متأخرة <span class="cnt">' + ar(odP.length) + '</span></h3><button data-act="kill-all">أجّلهم لبكرة</button></div><div class="list">';
@@ -442,8 +433,8 @@
     }
     var timed = list.filter(function (t) { return timeOn(t, k) && !isDone(t, k); });
     var anytime = list.filter(function (t) { return !timeOn(t, k) && !isDone(t, k); });
-    if (timed.length) { h += '<div class="sec"><h3>ليها ميعاد <span class="cnt">' + ar(timed.length) + '</span></h3></div><div class="list">'; timed.forEach(function (t) { h += taskCard(t, k, idx++); }); h += '</div>'; }
-    if (anytime.length) { h += '<div class="sec"><h3>في أي وقت <span class="cnt">' + ar(anytime.length) + '</span></h3></div><div class="list">'; anytime.forEach(function (t) { h += taskCard(t, k, idx++); }); h += '</div>'; }
+    if (timed.length) { h += '<div class="sec"><h3>بالساعة <span class="cnt">' + ar(timed.length) + '</span></h3></div><div class="list">'; timed.forEach(function (t) { h += taskCard(t, k, idx++); }); h += '</div>'; }
+    if (anytime.length) { h += '<div class="sec"><h3>من غير ساعة <span class="cnt">' + ar(anytime.length) + '</span></h3></div><div class="list">'; anytime.forEach(function (t) { h += taskCard(t, k, idx++); }); h += '</div>'; }
     var dn = all.filter(function (t) { return isDone(t, k); });
     if (dn.length) {
       h += '<div class="sec"><h3>خلصتهم <span class="cnt">' + ar(dn.length) + '</span></h3><button data-act="toggle-done">' + (showDone ? 'اخفيهم' : 'وريهم') + '</button></div>';
@@ -807,9 +798,6 @@
     var html = '<h2>' + esc(t.emoji) + ' ' + esc(t.title) + '</h2>' +
       '<div class="field"><label>المهمة</label><input id="fT" value="' + esc(t.title) + '"></div>' +
       '<div class="field"><label>تفاصيل</label><textarea id="fN" rows="3" placeholder="مبالغ، أرقام، أي حاجة عايز تفتكرها">' + esc(t.notes || '') + '</textarea></div>' +
-      '<details class="msgbox"' + (t.supply ? ' open' : '') + '><summary>علبة دوا أو مكمّل عايز تخلّصها</summary>' +
-      '<div class="row2"><div class="field"><label>فيها كام جرعة؟</label><input id="fSc" type="number" inputmode="numeric" min="1" value="' + (t.supply ? t.supply.total : '') + '" placeholder="٣٠"></div><div class="field"><label>سعرها (جنيه)</label><input id="fSp" type="number" inputmode="decimal" min="0" value="' + (t.supply && t.supply.price ? t.supply.price : '') + '" placeholder="اختياري"></div></div>' +
-      (t.supply ? '<p class="sup-left">فاضل ' + ar(t.supply.left) + ' من ' + ar(t.supply.total) + '</p>' : '') + '</details>' +
       '<details class="msgbox"' + (t.send ? ' open' : '') + '><summary>ابعت رسالة لحد في الميعاد ده</summary>' +
       '<div class="row2"><div class="field"><label>لمين</label><input id="fTo" value="' + esc(t.send ? t.send.to : '') + '" placeholder="بابا"></div><div class="field"><label>رقم الواتساب</label><input id="fPh" type="tel" inputmode="tel" value="' + esc(t.send ? t.send.phone : '') + '" placeholder="01xxxxxxxxx"></div></div>' +
       '<div class="choice" id="fTpl">' + MSG_TPL.map(function (m, i) { return '<button data-tpl="' + i + '">' + m[0] + '</button>'; }).join('') + '</div>' +
@@ -847,9 +835,6 @@
             t.title = $('#fT').value.trim() || t.title;
             var e = $('#fE button.on', root); if (e) t.emoji = e.dataset.e;
             t.date = $('#fD').value || null; t.time = $('#fH').value || null; t.repeat = $('#fR').value; t.isBig = $('#fB').value === '1'; t.notes = $('#fN').value.trim(); t.priority = $('#fP').value;
-            var sc = parseInt($('#fSc').value, 10), spr = $('#fSp').value;
-            if (sc > 0) { var prevLeft = t.supply ? t.supply.left - (t.supply.total - sc) : sc; t.supply = makeSupply({ count: sc, price: spr, left: clamp(prevLeft, 0, sc), item: t.supply ? t.supply.name : '' }, t.title); if (t.repeat === 'none') { t.repeat = 'daily'; if (!t.date) t.date = today(); } }
-            else t.supply = null;
             var mto = $('#fTo').value.trim(), mtx = $('#fMsg').value.trim();
             t.send = mtx ? makeSend({ to: mto, phone: $('#fPh').value, message: mtx }) : null;
             if (t.send && !t.send.phone && mto) { var mp = findPerson(mto); if (mp && !mp.phone && normPhone($('#fPh').value)) mp.phone = normPhone($('#fPh').value); }
@@ -998,6 +983,7 @@
       case 'go-me': switchView('me'); break;
       case 'wa': { var wr = b.closest('.task'), wt = wr && findTask(wr.dataset.id); if (wt) sendNow(wt, wr.dataset.k); break; }
       case 'eod': openEOD(); break;
+      case 'tip-ok': S.profile.tipSwipe = true; save(); renderToday(); break;
       case 'eod-time': { var ei = EOD_TIMES.indexOf(S.profile.eodTime || '00:00'); S.profile.eodTime = EOD_TIMES[(ei + 1) % EOD_TIMES.length]; save(); renderMe(); scheduleNotifs(); toast('⏰', 'هفكّرك تقفّل يومك الساعة ' + fmtTime(S.profile.eodTime)); break; }
       case 'replan': onboarding(3); break;
       case 'install': installSheet(); break;
@@ -1178,7 +1164,7 @@
     parsed.forEach(function (t, i) {
       h += '<div class="rcard" style="animation-delay:' + (i * 110 + 80) + 'ms" data-i="' + i + '"><div class="emo">' + esc(t.emoji) + '</div><div class="b">' +
         '<input class="t" value="' + esc(t.title) + '" data-f="title">' +
-        '<div class="meta"><label class="tag time"><span>' + (t.date ? dayLabel(t.date) : 'في أي وقت') + '</span><input type="date" data-f="date" value="' + (t.date || '') + '"></label>' +
+        '<div class="meta"><label class="tag time"><span>' + (t.date ? dayLabel(t.date) : 'من غير يوم') + '</span><input type="date" data-f="date" value="' + (t.date || '') + '"></label>' +
         '<label class="tag time"><span>' + (t.time ? fmtTime(t.time) : 'من غير ساعة') + '</span><input type="time" data-f="time" value="' + (t.time || '') + '"></label>' +
         '<button class="tag rep" data-f="repeat">' + { none: 'مرة واحدة', daily: 'كل يوم', weekly: 'كل أسبوع', monthly: 'كل شهر' }[t.repeat] + '</button>' +
         '<button class="tag' + (t.priority === 'high' ? ' hi' : '') + '" data-f="prio">' + (t.priority === 'high' ? 'مهم' : 'عادي') + '</button>' +
@@ -1200,7 +1186,7 @@
     $$('.rcard:not(.upd)', $('#vReview')).forEach(function (card) {
       var t = parsed[+card.dataset.i];
       $('input.t', card).oninput = function () { t.title = this.value; };
-      $('[data-f=date]', card).onchange = function () { t.date = this.value || null; this.previousElementSibling.textContent = t.date ? dayLabel(t.date) : 'في أي وقت'; };
+      $('[data-f=date]', card).onchange = function () { t.date = this.value || null; this.previousElementSibling.textContent = t.date ? dayLabel(t.date) : 'من غير يوم'; };
       $('[data-f=time]', card).onchange = function () { t.time = this.value || null; this.previousElementSibling.textContent = t.time ? fmtTime(t.time) : 'من غير ساعة'; if (t.time && !t.date) t.date = today(); };
       $('[data-f=repeat]', card).onclick = function () { var o = ['none', 'daily', 'weekly', 'monthly']; t.repeat = o[(o.indexOf(t.repeat) + 1) % 4]; if (t.repeat !== 'none' && !t.date) t.date = today(); this.textContent = { none: 'مرة واحدة', daily: 'كل يوم', weekly: 'كل أسبوع', monthly: 'كل شهر' }[t.repeat]; };
       $('[data-f=prio]', card).onclick = function () { t.priority = t.priority === 'high' ? 'normal' : 'high'; this.textContent = t.priority === 'high' ? 'مهم' : 'عادي'; this.classList.toggle('hi', t.priority === 'high'); };
@@ -1571,11 +1557,6 @@
     }
     function finish() {
       S.onboarded = true;
-      if (!S.tasks.length) {
-        var a = newTask({ title: 'اسحبني يمين لما تخلّص', emoji: '👋', date: today() });
-        var b = newTask({ title: 'دوس المايك وقول: فكرني بكرة الساعة ٥', emoji: '🎙️', date: today() });
-        S.tasks.push(a, b); freshIds[a.id] = freshIds[b.id] = 1;
-      }
       save(); el.innerHTML = ''; render(); burst(innerWidth / 2, innerHeight / 3, 120); sfx('level');
       toast(COACHES[S.profile.coach].face, 'أهلاً يا ' + esc(S.profile.name || 'باشا') + '. يلا نشوف هتأجّل قد إيه.');
     }

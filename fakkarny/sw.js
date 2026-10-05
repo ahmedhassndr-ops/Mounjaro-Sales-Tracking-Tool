@@ -1,5 +1,5 @@
 // فكرني service worker: offline shell + notifications.
-const CACHE = 'fakkarny-v10';
+const CACHE = 'fakkarny-v11';
 const SHELL = ['./', './index.html', './app.js', './parser.js', './adhan.min.js', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png', './fonts/readex-pro-arabic-400-normal.woff2', './fonts/readex-pro-arabic-500-normal.woff2', './fonts/readex-pro-arabic-700-normal.woff2', './fonts/readex-pro-arabic-600-normal.woff2' ];
 
 self.addEventListener('install', (e) => {
