@@ -302,7 +302,7 @@
     t.snoozes = (t.snoozes || 0) + 1;
     S.stats.snoozes[k] = (S.stats.snoozes[k] || 0) + 1;
     save(); render(); scheduleNotifs();
-    toast('⏰', say('snooze') + (t.snoozes >= 3 ? ' (أجّلتها ' + ar(t.snoozes) + ' مرات)' : '') + (pushOk === false ? '<br><small>تنبيه: الإشعار هيوصل بس لو فكرني مفتوح، الإشعارات في الخلفية مش متفعّلة.</small>' : ''));
+    toast('⏰', say('snooze') + (t.snoozes >= 3 ? ' (أجّلتها ' + ar(t.snoozes) + ' مرات)' : '') + (pushOk === false ? '<br><small>الإشعارات مقفولة، فالتنبيه هيوصلك بس وفكرني مفتوح.</small>' : ''));
     sfx('snooze');
   }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
@@ -494,7 +494,7 @@
   function isStepsGoal(g) { return g.kind === 'steps' || /خطو/.test(g.title || ''); }
   function stepsUrl() { return location.origin + '/api/steps?d=' + deviceId() + '&n='; }
   function stepsSheet() {
-    openSheet('<h2>🚶 اربط خطواتك من الآيفون</h2><p style="color:var(--mute);line-height:1.8;margin:-4px 0 12px">مرة واحدة بس، وبعدها فكرني يعرف خطواتك لوحده من Apple Health.</p><div class="ios-steps">' +
+    openSheet('<h2>اربط خطواتك من الآيفون</h2><p style="color:var(--mute);line-height:1.8;margin:-4px 0 12px">مرة واحدة بس، وبعدها فكرني يعرف خطواتك لوحده من Apple Health.</p><div class="ios-steps">' +
       '<div><b>١</b><span>افتح تطبيق <strong>Shortcuts</strong> ← <strong>Automation</strong> ← <strong>+</strong> ← <strong>Time of Day</strong>، اختار ٩ بالليل، و<strong>Run Immediately</strong>.</span></div>' +
       '<div><b>٢</b><span>ضيف <strong>Find Health Samples</strong>: النوع <strong>Steps</strong>، والتاريخ <strong>Is Today</strong>.</span></div>' +
       '<div><b>٣</b><span>ضيف <strong>Calculate Statistics</strong> واختار <strong>Sum</strong>.</span></div>' +
