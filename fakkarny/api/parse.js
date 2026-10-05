@@ -101,7 +101,7 @@ const REVIEW_SCHEMA = {
 const REVIEW_SYSTEM = `You are the end-of-day coach of "فكرني", an Egyptian app that fights procrastination. You get today's done and missed tasks, goals, prayers, snooze count, and the user's own notes on what went well and what could be better.
 Write:
 - feedback: 2-3 short lines in spoken Egyptian Arabic (like a friend texting, no MSA, no emoji, no slogans). Line 1: one specific thing that went well today. Line 2: one concrete thing to do differently tomorrow, based on what you see (snoozing, overdue tasks, missed prayers, the user's notes). Optional line 3: one short push.
-- plan: tomorrow's plan, max 6 items. Include the missed tasks the user chose to carry (use their taskId) and anything new the user's notes clearly ask for (taskId null). Order by priority. Give realistic times: important or hard things in the morning, nothing between 00:00 and 07:00, keep a task's existing time if it had one, leave time null for small anytime things. Titles in short Egyptian Arabic.
+- plan: a JSON array (list) of tomorrow's items, max 6. Include the missed tasks the user chose to carry (use their taskId) and anything new the user's notes clearly ask for (taskId null). Order by priority. Give realistic times: important or hard things in the morning, nothing between 00:00 and 07:00, keep a task's existing time if it had one, leave time null for small anytime things. Titles in short Egyptian Arabic.
 Never invent tasks that are not implied by the input.`;
 
 const PARSE_SYSTEM = `You are the brain of "فكرني", an Egyptian reminders app. The user dictated a voice note (speech-to-text, may be messy, Egyptian dialect, may mix English).
@@ -143,26 +143,33 @@ export default async function handler(req, res) {
   const schema = isReview ? REVIEW_SCHEMA : isBreakdown ? BREAKDOWN_SCHEMA : PARSE_SCHEMA;
 
   try {
-    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.2,
-        reasoning_effort: "medium",
-        max_completion_tokens: 4000,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: mode, strict: true, schema },
-        },
-      }),
-    });
+    // Groq validates strict JSON after generation; retry when the model returns the wrong shape.
+    let r, detail = "";
+    for (let attempt = 0; attempt < 3; attempt++) {
+      r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: MODEL,
+          temperature: 0.2 + attempt * 0.25,
+          reasoning_effort: "medium",
+          max_completion_tokens: 4000,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: { name: mode, strict: true, schema },
+          },
+        }),
+      });
+      if (r.ok || r.status !== 400) break;
+      detail = (await r.text()).slice(0, 300);
+      if (!detail.includes("json_validate_failed")) break;
+    }
     if (r.status === 429) return res.status(429).json({ error: "rate_limited" });
-    if (!r.ok) return res.status(502).json({ error: "upstream", status: r.status });
+    if (!r.ok) { if (!detail) detail = (await r.text()).slice(0, 300); console.error("groq", r.status, detail); return res.status(502).json({ error: "upstream", status: r.status }); }
     const data = await r.json();
     const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
     if (!content) return res.status(502).json({ error: "empty" });
