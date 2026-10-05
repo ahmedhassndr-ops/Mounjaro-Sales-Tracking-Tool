@@ -17,10 +17,21 @@ const TASK = {
     person: { type: ["string", "null"], description: "Person to call/visit if any" },
     priority: { type: "string", enum: ["normal", "high"], description: "high when the user says top priority, مهم, ضروري, أولوية, urgent" },
     notes: { type: "string", description: "Every concrete detail the user gave (amounts, accounts, banks, names, places, numbers), in Egyptian Arabic, short lines separated by newlines. Empty string if none." },
+    send: {
+      type: "object",
+      description: "Only when the user wants a message sent to someone else at the task time (ابعت لـ، فكّر بابا، قول لفلان، بلّغ الموظفين). Otherwise all fields null.",
+      properties: {
+        to: { type: ["string", "null"], description: "Who receives it, as the user named them (بابا, الدكتور أيمن, فريق الصيدلية)" },
+        phone: { type: ["string", "null"], description: "Phone digits only if the user said a number" },
+        message: { type: ["string", "null"], description: "The message itself, written warmly in spoken Egyptian Arabic, addressed to the recipient, as the user would send it" },
+      },
+      required: ["to", "phone", "message"],
+      additionalProperties: false,
+    },
     isBig: { type: "boolean", description: "True for big tasks people procrastinate on (report, project, exam, presentation)" },
     steps: { type: "array", items: { type: "string" }, description: "For big tasks only: 3-5 tiny concrete steps in Egyptian Arabic; else empty" },
   },
-  required: ["title", "emoji", "category", "date", "time", "repeat", "person", "priority", "notes", "isBig", "steps"],
+  required: ["title", "emoji", "category", "date", "time", "repeat", "person", "priority", "notes", "send", "isBig", "steps"],
   additionalProperties: false,
 };
 
@@ -111,6 +122,58 @@ Write:
 - plan.items: tomorrow's items, max 6. Include the missed tasks the user chose to carry (use their taskId) and anything new the user's notes clearly ask for (taskId null). Order by priority. Give realistic times: important or hard things in the morning, nothing between 00:00 and 07:00, keep a task's existing time if it had one, leave time null for small anytime things. Titles in short Egyptian Arabic.
 Never invent tasks that are not implied by the input.`;
 
+const ONBOARD_SCHEMA = {
+  type: "object",
+  properties: {
+    intro: { type: "string", description: "One or two short lines in spoken Egyptian Arabic explaining the plan" },
+    goals: {
+      type: "object",
+      properties: {
+        items: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" }, emoji: { type: "string" },
+              target: { type: "integer" }, period: { type: "string", enum: ["day", "week"] }, unit: { type: "string" },
+            },
+            required: ["title", "emoji", "target", "period", "unit"], additionalProperties: false,
+          },
+        },
+      },
+      required: ["items"], additionalProperties: false,
+    },
+    reminders: {
+      type: "object",
+      properties: {
+        items: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" }, emoji: { type: "string" },
+              time: { type: ["string", "null"] }, repeat: { type: "string", enum: ["none", "daily", "weekly", "monthly"] },
+              priority: { type: "string", enum: ["normal", "high"] }, notes: { type: "string" },
+            },
+            required: ["title", "emoji", "time", "repeat", "priority", "notes"], additionalProperties: false,
+          },
+        },
+      },
+      required: ["items"], additionalProperties: false,
+    },
+  },
+  required: ["intro", "goals", "reminders"],
+  additionalProperties: false,
+};
+
+const ONBOARD_SYSTEM = `You set up "فكرني" (an Egyptian anti-procrastination reminders app) for a new user. You get their name, why they came (reasons) and, in their own words, what they want to achieve in a period.
+Build a small, realistic starter plan they can actually keep:
+- goals.items: 2-5 habit goals counted per day or per week (e.g. water 8 glasses/day, gym 3/week, study 1/day). Break big wishes into the daily or weekly habit that gets them there (lose 5 kg => walk daily + gym 3/week). If prayer is a reason, include "الصلاة في وقتها" 5/day.
+- reminders.items: 2-6 recurring or one-off reminders with sensible times (medicine at a fixed time daily, call family weekly, weekly money review, a daily slot for the thing they keep postponing). No times between 00:00 and 07:00.
+- Fewer, achievable items beat many. Nothing the user did not imply.
+- intro: 1-2 short lines in spoken Egyptian Arabic, warm, no emoji, no MSA, no slogans.
+All titles short, natural Egyptian Arabic. One emoji per item.`;
+
 const PARSE_SYSTEM = `You are the brain of "فكرني", an Egyptian reminders app. The user dictated a voice note (speech-to-text, may be messy, Egyptian dialect, may mix English).
 Extract every separate thing they want to be reminded of as a task.
 Rules:
@@ -124,6 +187,7 @@ Rules:
   Example: "فكرني إني لسه محول لدكتور أيمن من صيدلية السلامة خمسين ألف من حساب CIB بتاع الصيدلية وعشرين ألف من السيفينجز في QNB، فكرني بيهم الساعة عشرة النهارده وخليها توب بريوريتي" => one task, title "أتابع تحويل دكتور أيمن (صيدلية السلامة)", time 10:00 today, priority high, notes "٥٠,٠٠٠ ج من حساب CIB بتاع الصيدلية\n٢٠,٠٠٠ ج من السيفينجز في QNB\nالإجمالي ٧٠,٠٠٠ ج".
 - Keep numbers, amounts, bank and account names exactly as said. Fix obvious speech-to-text spelling mistakes in Egyptian words; write bank names and English terms in Latin letters (CIB, QNB, savings).
 - If the user refers to something they already have (in the existing tasks list), e.g. "خلي ميعاد دكتور أيمن الساعة ١١" or "شيل تذكير الجيم" or "خلصت التحويل", return it in updates with that task's id instead of creating a new task.
+- Messages to other people: "فكرني الساعة ٩ كل يوم ابعت لبابا ياخد دواه" => one daily 09:00 task, title "ابعت لبابا: الدوا", send.to "بابا", send.message "من فضلك يا بابا متنساش تاخد دواك دلوقتي". Fill send only when someone else should receive a message.
 - Never invent tasks that were not said.`;
 
 const BREAKDOWN_SYSTEM = `You are the anti-procrastination coach of "فكرني". Break the user's big task into 3-6 tiny, concrete, non-scary steps (each 10-45 minutes) spread across the days from today until ONE DAY BEFORE the real deadline (a safety buffer). The first step must be doable in 5-10 minutes today. Write step titles in short Egyptian Arabic. Reply line: one sentence. Spoken Egyptian Arabic like a friend texting (حطيت، شلت، فكرتك; never تم or MSA), max 10 words, no emoji, no ellipsis, no MSA words, no slogans.`;
@@ -133,21 +197,23 @@ export default async function handler(req, res) {
   if (!KEY) return res.status(503).json({ error: "no_api_key" });
 
   const { mode = "parse", text = "", now, weekday, task, deadline, existing = [] } = req.body || {};
-  if (!["parse", "breakdown", "review"].includes(mode)) return res.status(400).json({ error: "bad_mode" });
+  if (!["parse", "breakdown", "review", "onboard"].includes(mode)) return res.status(400).json({ error: "bad_mode" });
   if (mode === "parse" && (!text || text.length > 4000)) return res.status(400).json({ error: "bad_text" });
   const open = (Array.isArray(existing) ? existing : []).slice(0, 60)
     .map((t) => `${t.id} | ${String(t.title || "").slice(0, 80)} | ${t.date || "-"} ${t.time || ""}`).join("\n");
 
   const context = `Current local date/time: ${now} (${weekday}).`;
-  const isBreakdown = mode === "breakdown", isReview = mode === "review";
-  const { day = {} } = req.body || {};
-  const user = isReview
+  const isBreakdown = mode === "breakdown", isReview = mode === "review", isOnboard = mode === "onboard";
+  const { day = {}, profile = {} } = req.body || {};
+  const user = isOnboard
+    ? `${context}\nNew user (JSON):\n${JSON.stringify(profile).slice(0, 3000)}`
+    : isReview
     ? `${context}\nToday's review data (JSON):\n${JSON.stringify(day).slice(0, 6000)}`
     : isBreakdown
     ? `${context}\nBig task: ${task}\nReal deadline: ${deadline}`
     : `${context}\nExisting tasks (id | title | date time):\n${open || "none"}\n\nVoice note:\n${text}`;
-  const system = isReview ? REVIEW_SYSTEM : isBreakdown ? BREAKDOWN_SYSTEM : PARSE_SYSTEM;
-  const schema = isReview ? REVIEW_SCHEMA : isBreakdown ? BREAKDOWN_SCHEMA : PARSE_SCHEMA;
+  const system = isOnboard ? ONBOARD_SYSTEM : isReview ? REVIEW_SYSTEM : isBreakdown ? BREAKDOWN_SYSTEM : PARSE_SYSTEM;
+  const schema = isOnboard ? ONBOARD_SCHEMA : isReview ? REVIEW_SCHEMA : isBreakdown ? BREAKDOWN_SCHEMA : PARSE_SCHEMA;
 
   try {
     // Groq validates strict JSON after generation; retry when the model returns the wrong shape.

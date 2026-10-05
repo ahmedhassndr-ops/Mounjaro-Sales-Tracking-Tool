@@ -179,11 +179,39 @@
     return null;
   }
 
+  // ---- messages to other people (WhatsApp) ----
+  // At the task's time the user gets a ping, one tap opens WhatsApp with the message ready to send.
+  function normPhone(v) {
+    var d = String(v || '').replace(/[٠-٩]/g, function (c) { return AR.indexOf(c); }).replace(/\D/g, '');
+    if (d.indexOf('00') === 0) d = d.slice(2);
+    if (d.length === 11 && d[0] === '0') d = '2' + d;      // Egyptian mobile 01xxxxxxxxx
+    if (d.length === 10 && d[0] === '1') d = '20' + d;
+    return d.length >= 8 ? d : '';
+  }
+  function makeSend(x) {
+    if (!x || !(x.message || x.text)) return null;
+    var to = x.to || '', ph = normPhone(x.phone);
+    if (!ph && to) { var pp = findPerson(to); if (pp && pp.phone) ph = pp.phone; }
+    return { to: to, phone: ph, text: x.message || x.text };
+  }
+  function waLink(sd) { return 'https://wa.me/' + (sd.phone || '') + '?text=' + encodeURIComponent(sd.text || ''); }
+  function sendNow(t, k) {
+    if (!t.send) return;
+    window.open(waLink(t.send), '_blank');
+    if (!isDone(t, k)) setTimeout(function () { toggleDone(t, k, null); }, 600);
+  }
+  var MSG_TPL = [
+    ['دوا', 'من فضلك يا {to} متنساش تاخد دواك دلوقتي'],
+    ['ميعاد', 'بفكّرك بميعاد {task} النهارده {time}'],
+    ['شغل', 'متنساش {task} قبل ما تقفل الشيفت'],
+    ['عام', 'بفكّرك بـ{task}']
+  ];
+
   function newTask(o) {
     return {
       id: uid(), title: o.title || 'تذكير', emoji: o.emoji || '✨', cat: o.category || o.cat || 'other',
       date: o.date || null, time: o.time || null, repeat: o.repeat || 'none', person: o.person || null,
-      isBig: !!o.isBig, steps: o.steps || [], notes: o.notes || '', priority: o.priority === 'high' ? 'high' : 'normal', created: Date.now(), snoozes: 0,
+      isBig: !!o.isBig, steps: o.steps || [], notes: o.notes || '', priority: o.priority === 'high' ? 'high' : 'normal', send: o.send && o.send.to !== undefined && o.send.phone !== undefined && o.send.text ? o.send : makeSend(o.send), created: Date.now(), snoozes: 0,
       doneAt: null, doneDates: {}, over: {}, skip: {}, xpGot: {}
     };
   }
@@ -314,6 +342,7 @@
     if (!done && tm && k === today()) { var p = tm.split(':'), due = new Date(); due.setHours(+p[0], +p[1]); var diff = due - Date.now(); if (diff < 30 * 60000 && diff > -60 * 60000) nowCls = ' now'; }
     var tags = '';
     if (t.priority === 'high' && !done) tags += '<span class="tag hi">مهم</span>';
+    if (t.send && !done) tags += '<button class="tag wa" data-act="wa">ابعت لـ' + esc(t.send.to || 'حد') + '</button>';
     if (late) tags += '<span class="tag late">متأخرة من ' + dayLabel(t.date) + '</span>';
     if (tm) tags += '<span class="tag time">' + fmtTime(tm) + '</span>';
     if (t.repeat !== 'none') tags += '<span class="tag rep">' + { daily: 'كل يوم', weekly: 'كل أسبوع', monthly: 'كل شهر' }[t.repeat] + '</span>';
@@ -593,6 +622,7 @@
     var rvKeys = Object.keys(S.reviews || {}).sort().reverse().slice(0, 7);
     h += '<div class="sec"><h3>مراجعاتك</h3></div><button class="rowbtn" data-act="eod"><span class="e">🌙</span><span>' + (S.reviews[today()] ? 'خطة بكرة' : 'قفّل يومك') + '</span><small>' + (S.reviews[today()] ? 'اتعملت' : 'دقيقة') + '</small></button>' +
       rvKeys.map(function (k) { var r = S.reviews[k]; return '<div class="rv-hist"><b>' + dayLabel(k) + '</b><span>' + ar(r.done) + '/' + ar(r.total) + '</span><small>' + esc(r.better || r.good || (r.feedback || '').split('\n')[0]) + '</small></div>'; }).join('');
+    h += '<button class="rowbtn" data-act="replan"><span class="e">🎯</span><span>جهّزلي خطة من أهدافي</span><small>٣ أسئلة</small></button>';
     h += '<div class="sec"><h3>الإعدادات</h3></div>' +
       '<button class="rowbtn" data-act="share"><span class="e">📣</span><span>ابعت مستواك لصحابك</span><small>تحدّاهم</small></button>' +
       '<button class="rowbtn" data-act="notif"><span class="e">🔔</span><span>الإشعارات</span><small>' + notifLabel() + '</small></button>' +
@@ -741,6 +771,10 @@
     var html = '<h2>' + esc(t.emoji) + ' ' + esc(t.title) + '</h2>' +
       '<div class="field"><label>المهمة</label><input id="fT" value="' + esc(t.title) + '"></div>' +
       '<div class="field"><label>تفاصيل</label><textarea id="fN" rows="3" placeholder="مبالغ، أرقام، أي حاجة عايز تفتكرها">' + esc(t.notes || '') + '</textarea></div>' +
+      '<details class="msgbox"' + (t.send ? ' open' : '') + '><summary>ابعت رسالة لحد في الميعاد ده</summary>' +
+      '<div class="row2"><div class="field"><label>لمين</label><input id="fTo" value="' + esc(t.send ? t.send.to : '') + '" placeholder="بابا"></div><div class="field"><label>رقم الواتساب</label><input id="fPh" type="tel" inputmode="tel" value="' + esc(t.send ? t.send.phone : '') + '" placeholder="01xxxxxxxxx"></div></div>' +
+      '<div class="choice" id="fTpl">' + MSG_TPL.map(function (m, i) { return '<button data-tpl="' + i + '">' + m[0] + '</button>'; }).join('') + '</div>' +
+      '<div class="field"><label>الرسالة</label><textarea id="fMsg" rows="3" placeholder="اكتب الرسالة اللي تتبعت">' + esc(t.send ? t.send.text : '') + '</textarea></div></details>' +
       '<div class="field"><label>الأيقونة</label><div class="emoji-pick" id="fE">' + EMOJIS.map(function (e) { return '<button class="' + (e === t.emoji ? 'on' : '') + '" data-e="' + e + '">' + e + '</button>'; }).join('') + '</div></div>' +
       '<div class="row2"><div class="field"><label>اليوم</label><input type="date" id="fD" value="' + (t.date || '') + '"></div><div class="field"><label>الساعة</label><input type="time" id="fH" value="' + (t.time || '') + '"></div></div>' +
       '<div class="row2"><div class="field"><label>بيتكرر؟</label><select id="fR">' + [['none', 'لأ'], ['daily', 'كل يوم'], ['weekly', 'كل أسبوع'], ['monthly', 'كل شهر']].map(function (o) { return '<option value="' + o[0] + '"' + (t.repeat === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
@@ -757,6 +791,7 @@
       '</div>';
     openSheet(html, function (root) {
       $$('#fE button', root).forEach(function (b) { b.onclick = function () { $$('#fE button', root).forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on'); }; });
+      $$('#fTpl button', root).forEach(function (b) { b.onclick = function () { var to = $('#fTo').value.trim() || ''; var tm = $('#fH').value; $('#fMsg').value = MSG_TPL[+b.dataset.tpl][1].replace('{to}', to).replace('{task}', $('#fT').value.trim()).replace('{time}', tm ? 'الساعة ' + fmtTime(tm) : '').replace(/\s+/g, ' ').trim(); if (!$('#fPh').value && to) { var pp = findPerson(to); if (pp && pp.phone) $('#fPh').value = pp.phone; } }; });
       $$('[data-act=step]', root).forEach(function (row) {
         row.onclick = function () {
           var s = t.steps[+row.dataset.i]; s.done = !s.done;
@@ -773,6 +808,9 @@
             t.title = $('#fT').value.trim() || t.title;
             var e = $('#fE button.on', root); if (e) t.emoji = e.dataset.e;
             t.date = $('#fD').value || null; t.time = $('#fH').value || null; t.repeat = $('#fR').value; t.isBig = $('#fB').value === '1'; t.notes = $('#fN').value.trim(); t.priority = $('#fP').value;
+            var mto = $('#fTo').value.trim(), mtx = $('#fMsg').value.trim();
+            t.send = mtx ? makeSend({ to: mto, phone: $('#fPh').value, message: mtx }) : null;
+            if (t.send && !t.send.phone && mto) { var mp = findPerson(mto); if (mp && !mp.phone && normPhone($('#fPh').value)) mp.phone = normPhone($('#fPh').value); }
             if (t.repeat !== 'none' && !t.date) t.date = today();
             save();
           }
@@ -835,6 +873,7 @@
     p = p || { id: uid(), name: tpl.custom ? '' : tpl.n, emoji: tpl.e, every: tpl.every, rel: tpl.rel, last: null, birthday: null, created: Date.now() };
     var html = '<h2>' + esc(p.emoji) + ' ' + (isNew ? 'حد جديد' : esc(p.name)) + '</h2>' +
       '<div class="field"><label>الاسم</label><input id="pN" value="' + esc(p.name) + '" placeholder="مثلاً: ماما، أحمد صاحبي"></div>' +
+      '<div class="field"><label>رقم الواتساب (عشان تبعتله رسايل من فكرني)</label><input id="pPh" type="tel" inputmode="tel" value="' + esc(p.phone || '') + '" placeholder="01xxxxxxxxx"></div>' +
       '<div class="field"><label>عايز تكلمه كل قد إيه؟</label><div class="choice" id="pE">' + EVERY.map(function (o) { return '<button class="' + (o[0] === p.every ? 'on' : '') + '" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
       '<div class="field"><label>عيد ميلاده (اختياري)</label><input id="pB" type="date" value="' + (p.birthday ? '2000-' + p.birthday : '') + '"></div>' +
       '<div class="field"><label>الأيقونة</label><div class="emoji-pick" id="pX">' + ['👩', '👨', '👵', '👴', '🧑', '👧', '👦', '🤝', '❤️', '⭐', '👶', '💍'].map(function (e) { return '<button class="' + (e === p.emoji ? 'on' : '') + '" data-e="' + e + '">' + e + '</button>'; }).join('') + '</div></div>' +
@@ -847,6 +886,7 @@
           var a = b.dataset.pa;
           if (a === 'save') {
             p.name = $('#pN').value.trim(); if (!p.name) { $('#pN').focus(); return; }
+            p.phone = normPhone($('#pPh').value);
             var e = $('#pE button.on', root); if (e) p.every = +e.dataset.v;
             var x = $('#pX button.on', root); if (x) p.emoji = x.dataset.e;
             var bd = $('#pB').value; p.birthday = bd ? bd.slice(5) : null;
@@ -896,7 +936,7 @@
           if (dx < -90) { card.style.transform = ''; snoozeSheet(t); return; }
         }
         card.style.transform = '';
-        if (!drag && !decided && Date.now() - t0 < 500 && t && !(e.target.closest && e.target.closest('[data-act=check]'))) taskSheet(t, k);
+        if (!drag && !decided && Date.now() - t0 < 500 && t && !(e.target.closest && e.target.closest('[data-act]'))) taskSheet(t, k);
       }
       card.addEventListener('pointerup', end); card.addEventListener('pointercancel', function (e) { if (pid === e.pointerId) { pid = null; card.style.transition = ''; card.style.transform = ''; } });
     });
@@ -914,7 +954,9 @@
       case 'toggle-done': showDone = !showDone; renderToday(); break;
       case 'kill-all': overdueList().forEach(function (t) { t.date = dk(addDays(new Date(), 1)); t.snoozes++; }); S.stats.snoozes[today()] = (S.stats.snoozes[today()] || 0) + 1; save(); render(); toast('😴', say('snooze')); break;
       case 'go-me': switchView('me'); break;
+      case 'wa': { var wr = b.closest('.task'), wt = wr && findTask(wr.dataset.id); if (wt) sendNow(wt, wr.dataset.k); break; }
       case 'eod': openEOD(); break;
+      case 'replan': onboarding(3); break;
       case 'install': installSheet(); break;
       case 'focus': { var ft = findTask(id); if (ft) openFocus(ft); break; }
       case 'called': { var p = S.people.filter(function (x) { return x.id === id; })[0]; if (p) called(p, b); break; }
@@ -1098,7 +1140,8 @@
         '<button class="tag rep" data-f="repeat">' + { none: 'مرة واحدة', daily: 'كل يوم', weekly: 'كل أسبوع', monthly: 'كل شهر' }[t.repeat] + '</button>' +
         '<button class="tag' + (t.priority === 'high' ? ' hi' : '') + '" data-f="prio">' + (t.priority === 'high' ? 'مهم' : 'عادي') + '</button>' +
         (t.isBig ? '<span class="tag big">' + ar(t.steps.length) + ' خطوات</span>' : '') + '</div>' +
-        (t.notes ? '<div class="notes">' + esc(t.notes) + '</div>' : '') + '</div><button class="del" data-f="del">✕</button></div>';
+        (t.notes ? '<div class="notes">' + esc(t.notes) + '</div>' : '') +
+        (t.send ? '<div class="notes wa-note">واتساب لـ' + esc(t.send.to || 'حد') + (t.send.phone ? '' : ' (من غير رقم، هتختاره من واتساب)') + ': ' + esc(t.send.text) + '</div>' : '') + '</div><button class="del" data-f="del">✕</button></div>';
     });
     pendingUpdates.forEach(function (u, i) {
       var ot = findTask(u.id);
@@ -1228,9 +1271,9 @@
       else toast('🔕', 'الإشعارات مقفولة، تقدر تفتحها من إعدادات الموبايل');
     });
   }
-  function notify(title, body, tag) {
+  function notify(title, body, tag, url) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return false;
-    var opts = { body: body, tag: tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', renotify: !!tag };
+    var opts = { body: body, tag: tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', renotify: !!tag, data: { url: url || null } };
     if (navigator.serviceWorker && navigator.serviceWorker.ready) {
       navigator.serviceWorker.ready.then(function (r) { r.showNotification(title, opts); }).catch(function () { try { new Notification(title, opts); } catch (_) { } });
     } else { try { new Notification(title, opts); } catch (_) { } }
@@ -1263,7 +1306,8 @@
   function ping(t, k) {
     if (isDone(t, k)) return;
     t.pinged = t.pinged || {}; t.pinged[k] = 1; save();
-    notify(t.emoji + ' ' + t.title, say('ping'), t.id);
+    if (t.send) notify('ابعت لـ' + (t.send.to || 'حد') + ' دلوقتي', t.send.text, t.id, waLink(t.send));
+    else notify(t.emoji + ' ' + t.title, say('ping'), t.id);
     if (document.visibilityState === 'visible') { toast(t.emoji, '<b>' + esc(t.title) + '</b>، ' + say('ping')); sfx('ping'); buzz([30, 60, 30]); render(); }
   }
   function catchUp() {
@@ -1374,9 +1418,31 @@
   }
 
   // ================= onboarding =================
-  function onboarding() {
-    var step = 0, el = $('#onb');
-    function dots() { var h = '<div class="pdots">'; for (var i = 0; i < 4; i++) h += '<i class="' + (i === step ? 'on' : '') + '"></i>'; return h + '</div>'; }
+  // Intro, name, coach, then a short interview (why you're here + what you want to hit) that the AI
+  // turns into a starter plan of goals and reminders. startAt=3 reruns only the interview (from the Me tab).
+  var WHY = [
+    ['procrast', '⏳', 'بأجّل كتير'], ['meds', '💊', 'أدوية وفيتامينات'], ['prayer', '🤲', 'الصلاة'],
+    ['sport', '🏋️', 'رياضة وصحة'], ['study', '📚', 'مذاكرة أو كورس'], ['work', '💼', 'شغل ومواعيد'],
+    ['family', '❤️', 'أهلي وصحابي'], ['money', '💰', 'فلوس ومدفوعات'], ['saved', '📌', 'حاجات متسجلة ومخلّصتهاش']
+  ];
+  var PERIODS = [['week', 'الأسبوع ده'], ['month', 'الشهر ده'], ['quarter', '٣ شهور']];
+  function localStarter(why) {
+    var goals = [], rem = [];
+    if (why.prayer) goals.push({ title: 'الصلاة في وقتها', emoji: '🤲', target: 5, period: 'day', unit: 'صلاة' });
+    if (why.sport) goals.push({ title: 'جيم', emoji: '🏋️', target: 3, period: 'week', unit: 'مرة' });
+    if (why.study) goals.push({ title: 'أذاكر ساعة', emoji: '📚', target: 1, period: 'day', unit: '' });
+    if (why.procrast) goals.push({ title: 'أبدأ بأتقل حاجة الصبح', emoji: '⏳', target: 1, period: 'day', unit: '' });
+    if (why.meds) rem.push({ title: 'آخد الدوا', emoji: '💊', time: '09:00', repeat: 'daily', priority: 'high', notes: '' });
+    if (why.family) rem.push({ title: 'أكلم ماما', emoji: '📞', time: '20:00', repeat: 'weekly', priority: 'normal', notes: '' });
+    if (why.money) rem.push({ title: 'أراجع المصاريف', emoji: '💰', time: '21:00', repeat: 'weekly', priority: 'normal', notes: '' });
+    if (why.saved) rem.push({ title: 'أخلّص حاجة واحدة من اللي متسجلين', emoji: '📌', time: '18:00', repeat: 'daily', priority: 'normal', notes: '' });
+    if (why.work) rem.push({ title: 'أرتب مواعيد بكرة', emoji: '💼', time: '21:30', repeat: 'daily', priority: 'normal', notes: '' });
+    return { intro: 'جهزتلك بداية على قد اللي قلته. شيل اللي مش عايزه.', goals: goals, reminders: rem };
+  }
+  function onboarding(startAt) {
+    var only = startAt === 3, step = startAt || 0, el = $('#onb'), why = {}, wish = '', period = 'month', plan = null, pick = {};
+    var LAST = 6;
+    function dots() { var h = '<div class="pdots">'; for (var i = only ? 3 : 0; i <= (only ? 5 : LAST); i++) h += '<i class="' + (i === step ? 'on' : '') + '"></i>'; return h + '</div>'; }
     function show() {
       var h = '<div class="onb"><div class="bg-glow"></div>';
       if (step === 0) {
@@ -1390,6 +1456,25 @@
         h += '<div class="pg"><h2>اختار المدرب بتاعك</h2><p>ده اللي هيكلمك ويزقّك. تقدر تغيّره بعدين.</p><div class="coach-pick">' +
           Object.keys(COACHES).map(function (k) { var c = COACHES[k]; return '<button class="' + (S.profile.coach === k ? 'on' : '') + '" data-c="' + k + '"><span class="e">' + c.face + '</span><span><b>' + c.name + '</b><small>' + c.desc + '</small></span></button>'; }).join('') +
           '</div></div>' + dots() + '<button class="nextb" id="oN">كمّل</button>';
+      } else if (step === 3) {
+        h += '<div class="pg"><h2>جاي فكرني ليه؟</h2><p>اختار كل اللي يخصك.</p><div class="why-grid">' +
+          WHY.map(function (w) { return '<button class="why' + (why[w[0]] ? ' on' : '') + '" data-w="' + w[0] + '"><span class="e">' + w[1] + '</span>' + w[2] + '</button>'; }).join('') +
+          '</div></div>' + dots() + '<button class="nextb" id="oN">كمّل</button>' + (only ? '<button class="skip" id="oX">اقفل</button>' : '');
+      } else if (step === 4) {
+        h += '<div class="pg"><h2>عايز توصل لإيه؟</h2><p>اكتب أو قول بالكيبورد أهم حاجات عايز تحققها، حتى لو مش مترتبة.</p>' +
+          '<textarea class="wish" id="oWish" rows="4" placeholder="مثلاً: أنزل ٥ كيلو، أخلّص كورس الديزاين، أبطّل أأجل شغل الصيدلية، أكلم أهلي أكتر">' + esc(wish) + '</textarea>' +
+          '<div class="seg-mini">' + PERIODS.map(function (p) { return '<button class="' + (period === p[0] ? 'on' : '') + '" data-per="' + p[0] + '">' + p[1] + '</button>'; }).join('') + '</div></div>' +
+          dots() + '<button class="nextb" id="oN">جهّزلي خطة</button>';
+      } else if (step === 5) {
+        if (!plan) {
+          h += '<div class="pg"><h2>بجهّزلك خطتك</h2><div class="thinking show" style="justify-content:center;margin-top:30px"><div class="dotsl"><i></i><i></i><i></i></div></div></div>';
+        } else {
+          var gi = plan.goals.map(function (g, i) { return '<button class="plan-row' + (pick['g' + i] ? ' on' : '') + '" data-pk="g' + i + '"><span class="ck"></span><span class="e">' + esc(g.emoji) + '</span><span class="tx"><b>' + esc(g.title) + '</b><small>' + ar(g.target) + ' ' + esc(g.unit || 'مرة') + ' ' + (g.period === 'week' ? 'في الأسبوع' : 'في اليوم') + '</small></span></button>'; }).join('');
+          var ri = plan.reminders.map(function (r, i) { return '<button class="plan-row' + (pick['r' + i] ? ' on' : '') + '" data-pk="r' + i + '"><span class="ck"></span><span class="e">' + esc(r.emoji) + '</span><span class="tx"><b>' + esc(r.title) + '</b><small>' + (r.time ? fmtTime(r.time) : 'أي وقت') + (r.repeat !== 'none' ? ' • ' + { daily: 'كل يوم', weekly: 'كل أسبوع', monthly: 'كل شهر' }[r.repeat] : '') + '</small></span></button>'; }).join('');
+          h += '<div class="pg"><h2>دي خطتك</h2><p>' + esc(plan.intro) + '</p>' +
+            (gi ? '<div class="plan-h">أهداف</div>' + gi : '') + (ri ? '<div class="plan-h">تذكيرات</div>' + ri : '') + '</div>' +
+            dots() + '<button class="nextb" id="oN">ابدأ بالخطة دي</button>';
+        }
       } else {
         if (isIOS && !isStandalone) {
           h += '<div class="pg"><h2>حطه على الشاشة الرئيسية</h2><p>من غير App Store. عشان يفتح بلمسة وتوصلك الإشعارات:</p><div class="ios-steps"><div><b>١</b><span>دوس زرار المشاركة <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4DA3FF" stroke-width="2" style="vertical-align:-3px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v8h14v-8"/></svg> في Safari</span></div><div><b>٢</b><span>اختار <b>Add to Home Screen</b></span></div><div><b>٣</b><span>افتح فكرني من الأيقونة الجديدة</span></div></div></div>' + dots() + '<button class="nextb" id="oN">تمام</button>';
@@ -1401,20 +1486,52 @@
       el.innerHTML = h;
       var n = $('#oName'); if (n) { setTimeout(function () { n.focus(); }, 300); n.onkeydown = function (e) { if (e.key === 'Enter') $('#oN').click(); }; }
       $$('[data-c]', el).forEach(function (b) { b.onclick = function () { S.profile.coach = b.dataset.c; $$('[data-c]', el).forEach(function (x) { x.classList.toggle('on', x === b); }); unlockAudio(); sfx('tick'); }; });
+      $$('[data-w]', el).forEach(function (b) { b.onclick = function () { why[b.dataset.w] = !why[b.dataset.w]; b.classList.toggle('on', !!why[b.dataset.w]); sfx('tick'); buzz(6); }; });
+      $$('[data-per]', el).forEach(function (b) { b.onclick = function () { period = b.dataset.per; $$('[data-per]', el).forEach(function (x) { x.classList.toggle('on', x === b); }); }; });
+      $$('[data-pk]', el).forEach(function (b) { b.onclick = function () { pick[b.dataset.pk] = !pick[b.dataset.pk]; b.classList.toggle('on', !!pick[b.dataset.pk]); sfx('tick'); }; });
+      var x = $('#oX'); if (x) x.onclick = function () { el.innerHTML = ''; };
       var nb = $('#oNotif'); if (nb) nb.onclick = function () { if ('Notification' in window) Notification.requestPermission().then(function (p) { S.profile.notif = p === 'granted'; finish(); }); else finish(); };
-      $('#oN').onclick = function () {
+      var nx = $('#oN'); if (nx) nx.onclick = function () {
         unlockAudio();
-        if (step === 1) { S.profile.name = ($('#oName').value || '').trim(); }
-        if (step < 3) { step++; show(); sfx('tick'); } else finish();
+        if (step === 1) S.profile.name = ($('#oName').value || '').trim();
+        if (step === 4) { wish = ($('#oWish').value || '').trim(); step = 5; plan = null; show(); buildPlan(); return; }
+        if (step === 5) { applyStarter(); if (only) { el.innerHTML = ''; save(); render(); toast('🎯', 'خطتك اتحطت'); return; } }
+        if (step < LAST) { step++; show(); sfx('tick'); } else finish();
       };
+    }
+    function buildPlan() {
+      var labels = WHY.filter(function (w) { return why[w[0]]; }).map(function (w) { return w[2]; });
+      var now = new Date();
+      postAI({ mode: 'onboard', profile: { name: S.profile.name, coach: S.profile.coach, reasons: labels, goalsText: wish, period: period }, now: now.toString(), weekday: WDF[now.getDay()] }).then(function (r) {
+        var g = r && r.goals ? (Array.isArray(r.goals) ? r.goals : r.goals.items) : null, rm = r && r.reminders ? (Array.isArray(r.reminders) ? r.reminders : r.reminders.items) : null;
+        plan = g && rm && (g.length || rm.length) ? { intro: r.intro || '', goals: g, reminders: rm } : localStarter(why);
+        if (!plan.goals.length && !plan.reminders.length) plan = { intro: 'لسه مفيش حاجة واضحة. ابدأ بالمايك وقول اللي وراك.', goals: [], reminders: [] };
+        pick = {}; plan.goals.forEach(function (_, i) { pick['g' + i] = true; }); plan.reminders.forEach(function (_, i) { pick['r' + i] = true; });
+        if (step === 5) show();
+      });
+    }
+    function applyStarter() {
+      if (!plan) return;
+      S.profile.why = why; S.profile.wish = wish; S.profile.period = period;
+      plan.goals.forEach(function (g, i) {
+        if (!pick['g' + i]) return;
+        var pr = /صلا/.test(g.title);
+        S.goals.push({ id: uid(), title: g.title, emoji: g.emoji || '🎯', target: pr ? 5 : clamp(g.target || 1, 1, 50), period: pr ? 'day' : (g.period === 'week' ? 'week' : 'day'), unit: pr ? 'صلاة' : (g.unit || ''), kind: pr ? 'prayer' : null, log: {}, created: Date.now() });
+      });
+      plan.reminders.forEach(function (r, i) {
+        if (!pick['r' + i]) return;
+        var t = newTask({ title: r.title, emoji: r.emoji, date: today(), time: r.time, repeat: r.repeat || 'none', priority: r.priority, notes: r.notes });
+        S.tasks.push(t); freshIds[t.id] = 1;
+      });
+      if (S.goals.some(isPrayerGoal) && !S.profile.loc) askLocation(render);
+      scheduleNotifs();
     }
     function finish() {
       S.onboarded = true;
       if (!S.tasks.length) {
         var a = newTask({ title: 'اسحبني يمين لما تخلّص', emoji: '👋', date: today() });
         var b = newTask({ title: 'دوس المايك وقول: فكرني بكرة الساعة ٥', emoji: '🎙️', date: today() });
-        var c = newTask({ title: 'اسحبني شمال لو عايز تأجّل (بس متتعودش)', emoji: '😴', date: today() });
-        S.tasks.push(a, b, c); freshIds[a.id] = freshIds[b.id] = freshIds[c.id] = 1;
+        S.tasks.push(a, b); freshIds[a.id] = freshIds[b.id] = 1;
       }
       save(); el.innerHTML = ''; render(); burst(innerWidth / 2, innerHeight / 3, 120); sfx('level');
       toast(COACHES[S.profile.coach].face, 'أهلاً يا ' + esc(S.profile.name || 'باشا') + '. يلا نشوف هتأجّل قد إيه.');

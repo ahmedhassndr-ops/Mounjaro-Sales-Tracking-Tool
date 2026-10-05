@@ -136,6 +136,32 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .tag.big{color:var(--gold);background:var(--gold-soft)}
 .tag.rep{color:var(--blue);background:var(--blue-soft)}
 .tag.hi{color:#fff;background:var(--red)}
+.tag.wa{color:#fff;background:#1FA855;border:0;cursor:pointer}
+.wa-note{color:#1a7f43}
+.msgbox{margin:4px 0 12px;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--surface)}
+.msgbox summary{font-size:14px;font-weight:600;cursor:pointer;list-style:none}
+.msgbox summary::before{content:"＋ ";color:var(--brand)}
+.msgbox[open] summary{margin-bottom:10px}
+.msgbox .choice{margin-bottom:10px}
+.why-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.why{display:flex;align-items:center;gap:8px;padding:12px;border-radius:14px;background:var(--surface);border:1.5px solid var(--line);font-size:14px;font-weight:500;text-align:start;transition:transform .15s var(--ease)}
+.why:active{transform:scale(.97)}
+.why .e{font-size:19px}
+.why.on{border-color:var(--brand);background:var(--brand-soft)}
+.wish{width:100%;margin-top:14px;border-radius:16px;border:1.5px solid var(--line2);background:var(--surface);padding:14px;font-size:16px;line-height:1.7;resize:none;outline:none}
+.wish:focus{border-color:var(--brand)}
+.seg-mini{display:flex;gap:6px;margin-top:10px}
+.seg-mini button{flex:1;padding:9px 4px;border-radius:12px;background:var(--surface2);border:1.5px solid var(--line);font-size:13.5px}
+.seg-mini button.on{border-color:var(--ink);background:var(--surface)}
+.plan-h{font-size:13px;color:var(--mute);margin:14px 0 6px;font-weight:600}
+.plan-row{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;margin-bottom:6px;border-radius:14px;background:var(--surface);border:1.5px solid var(--line);text-align:start;opacity:.55}
+.plan-row.on{opacity:1;border-color:var(--line2)}
+.plan-row .ck{width:20px;height:20px;border-radius:6px;border:2px solid var(--line2);flex:none}
+.plan-row.on .ck{background:var(--brand);border-color:var(--brand)}
+.plan-row .e{font-size:20px}
+.plan-row .tx{display:flex;flex-direction:column;flex:1}
+.plan-row .tx small{color:var(--mute);font-size:12.5px}
+.onb .pg{overflow-y:auto}
 .nudge.eod{border-color:var(--ink);}
 .nudge.eod small{color:var(--mute);font-size:12.5px}
 .eod-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;margin:4px 0 6px}
