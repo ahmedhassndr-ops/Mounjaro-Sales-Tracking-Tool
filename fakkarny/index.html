@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#F6F2EA" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#15130F" media="(prefers-color-scheme: dark)">
 <link rel="preload" href="fonts/readex-pro-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="fonts/baloo-bhaijaan-2-arabic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/readex-pro-arabic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -17,10 +17,6 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <style>
-@font-face{font-family:"Baloo";font-weight:700;font-display:swap;src:url(fonts/baloo-bhaijaan-2-arabic-700-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF}
-@font-face{font-family:"Baloo";font-weight:700;font-display:swap;src:url(fonts/baloo-bhaijaan-2-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F}
-@font-face{font-family:"Baloo";font-weight:800;font-display:swap;src:url(fonts/baloo-bhaijaan-2-arabic-800-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF}
-@font-face{font-family:"Baloo";font-weight:800;font-display:swap;src:url(fonts/baloo-bhaijaan-2-latin-800-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F}
 @font-face{font-family:"Readex";font-weight:400;font-display:swap;src:url(fonts/readex-pro-arabic-400-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF}
 @font-face{font-family:"Readex";font-weight:400;font-display:swap;src:url(fonts/readex-pro-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F}
 @font-face{font-family:"Readex";font-weight:500;font-display:swap;src:url(fonts/readex-pro-arabic-500-normal.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF}
@@ -43,7 +39,7 @@
   --r:16px; --r2:22px;
   --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
   --ease:cubic-bezier(.2,.9,.3,1.1);
-  --head:"Baloo","Readex",system-ui,sans-serif;
+  --head:"Readex",system-ui,sans-serif;
   --body:"Readex",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
   color-scheme:light;
 }
@@ -492,11 +488,29 @@ input,textarea{caret-color:var(--brand)}
 .fab{box-shadow:0 5px 0 var(--brand-d),var(--e3)}
 .fab:active{transform:translateY(4px);box-shadow:0 1px 0 var(--brand-d),var(--e1)}
 
+/* today: progress and coach in one quiet block, tasks right after */
+.todaybar{background:var(--surface);border:1.5px solid var(--hair);border-radius:var(--r2);padding:14px 16px 12px;margin-bottom:14px;box-shadow:var(--hl),var(--e2)}
+.tb-row{display:flex;justify-content:space-between;align-items:baseline}
+.tb-row b{font-family:var(--head);font-size:18px;font-weight:700}
+.tb-row span{font-family:var(--head);font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums}
+.pbar{height:10px;border-radius:99px;background:var(--track);margin:10px 0 12px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(90,62,20,.14)}
+.pbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(180deg,#F47A32 0%,var(--brand) 100%);box-shadow:inset 0 -2px 0 rgba(120,40,0,.2);transition:width .8s var(--ease)}
+.coachline{display:flex;gap:10px;align-items:center;cursor:pointer;padding-top:10px;border-top:1px solid var(--hair)}
+.coachline .who{width:32px;height:32px;flex:none;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font-size:17px}
+.coachline .bubble{font-size:14.5px;line-height:1.6;color:var(--ink)}
+.nudge.eod{background:var(--ink);color:var(--bg);border-color:var(--ink);box-shadow:var(--e2);margin-bottom:12px}
+.nudge.eod .e{background:rgba(255,255,255,.12)}
+.nudge.eod small{color:var(--bg);opacity:.7}
+.nudge.eod button{background:var(--brand)}
+.nudge.eod.done{background:var(--surface);color:var(--ink);border-color:var(--hair)}
+.nudge.eod.done .e{background:var(--brand-soft)}
+.tag.sup{color:var(--green-d);background:var(--green-soft)}
+.sup-left{font-size:13px;color:var(--mute);margin-top:-4px}
 /* numbers carry the game: rounded display face, lining up */
 .ring .v,.dpill .d,.stat .n,.eod-stats b,.chip-streak,.lvl-av .n,.xpline,.goal p,.pr small{font-variant-numeric:tabular-nums}
-.top h1{font-size:25px;font-weight:800}
-.ring .v{font-size:21px;font-weight:800}
-.stat .n{font-size:24px;font-weight:800}
+.top h1{font-size:25px;font-weight:700}
+.ring .v{font-size:21px;font-weight:700}
+.stat .n{font-size:24px;font-weight:700}
 .sec h3{font-size:14.5px;font-weight:600}
 .task .ttl{font-size:16px}
 </style>

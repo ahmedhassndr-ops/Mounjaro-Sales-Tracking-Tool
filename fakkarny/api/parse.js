@@ -17,6 +17,17 @@ const TASK = {
     person: { type: ["string", "null"], description: "Person to call/visit if any" },
     priority: { type: "string", enum: ["normal", "high"], description: "high when the user says top priority, مهم, ضروري, أولوية, urgent" },
     notes: { type: "string", description: "Every concrete detail the user gave (amounts, accounts, banks, names, places, numbers), in Egyptian Arabic, short lines separated by newlines. Empty string if none." },
+    supply: {
+      type: "object",
+      description: "Only when the user bought a box/pack of something to take over days (vitamins, supplements, medicine course). Otherwise all fields null.",
+      properties: {
+        item: { type: ["string", "null"], description: "Short product name as said (سنترم، أوميجا ٣، الحديد)" },
+        count: { type: ["integer", "null"], description: "How many doses/pills in the box" },
+        price: { type: ["number", "null"], description: "Price in EGP if said" },
+      },
+      required: ["item", "count", "price"],
+      additionalProperties: false,
+    },
     send: {
       type: "object",
       description: "Only when the user wants a message sent to someone else at the task time (ابعت لـ، فكّر بابا، قول لفلان، بلّغ الموظفين). Otherwise all fields null.",
@@ -31,7 +42,7 @@ const TASK = {
     isBig: { type: "boolean", description: "True for big tasks people procrastinate on (report, project, exam, presentation)" },
     steps: { type: "array", items: { type: "string" }, description: "For big tasks only: 3-5 tiny concrete steps in Egyptian Arabic; else empty" },
   },
-  required: ["title", "emoji", "category", "date", "time", "repeat", "person", "priority", "notes", "send", "isBig", "steps"],
+  required: ["title", "emoji", "category", "date", "time", "repeat", "person", "priority", "notes", "supply", "send", "isBig", "steps"],
   additionalProperties: false,
 };
 
@@ -191,6 +202,7 @@ Rules:
 - Keep numbers, amounts, bank and account names exactly as said. Fix obvious speech-to-text spelling mistakes in Egyptian words; write bank names and English terms in Latin letters (CIB, QNB, savings).
 - If the user refers to something they already have (in the existing tasks list), e.g. "خلي ميعاد دكتور أيمن الساعة ١١" or "شيل تذكير الجيم" or "خلصت التحويل", return it in updates with that task's id instead of creating a new task.
 - Messages to other people: "فكرني الساعة ٩ كل يوم ابعت لبابا ياخد دواه" => one daily 09:00 task, title "ابعت لبابا: الدوا", send.to "بابا", send.message "من فضلك يا بابا متنساش تاخد دواك دلوقتي". Fill send only when someone else should receive a message.
+- Supplies: "اشتريت علبة سنترم ٣٠ حباية بـ٧٥٠ جنيه، فكرني آخدها الصبح" => one daily task 09:00 (or the time said, after breakfast if unsure), title "آخد سنترم", supply {item "سنترم", count 30, price 750}. If no count is said but it is clearly a box of pills, use 30.
 - Never invent tasks that were not said.`;
 
 const BREAKDOWN_SYSTEM = `You are the anti-procrastination coach of "فكرني". Break the user's big task into 3-6 tiny, concrete, non-scary steps (each 10-45 minutes) spread across the days from today until ONE DAY BEFORE the real deadline (a safety buffer). The first step must be doable in 5-10 minutes today. Write step titles in short Egyptian Arabic. Reply line: one sentence. Spoken Egyptian Arabic like a friend texting (حطيت، شلت، فكرتك; never تم or MSA), max 10 words, no emoji, no ellipsis, no MSA words, no slogans.`;
