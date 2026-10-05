@@ -80,6 +80,9 @@ const REVIEW_SCHEMA = {
   properties: {
     feedback: { type: "string", description: "2-3 short lines in spoken Egyptian Arabic, separated by newlines" },
     plan: {
+      type: "object",
+      properties: {
+        items: {
       type: "array",
       items: {
         type: "object",
@@ -92,6 +95,10 @@ const REVIEW_SCHEMA = {
         required: ["taskId", "title", "time", "priority"],
         additionalProperties: false,
       },
+        },
+      },
+      required: ["items"],
+      additionalProperties: false,
     },
   },
   required: ["feedback", "plan"],
@@ -101,7 +108,7 @@ const REVIEW_SCHEMA = {
 const REVIEW_SYSTEM = `You are the end-of-day coach of "فكرني", an Egyptian app that fights procrastination. You get today's done and missed tasks, goals, prayers, snooze count, and the user's own notes on what went well and what could be better.
 Write:
 - feedback: 2-3 short lines in spoken Egyptian Arabic (like a friend texting, no MSA, no emoji, no slogans). Line 1: one specific thing that went well today. Line 2: one concrete thing to do differently tomorrow, based on what you see (snoozing, overdue tasks, missed prayers, the user's notes). Optional line 3: one short push.
-- plan: a JSON array (list) of tomorrow's items, max 6. Include the missed tasks the user chose to carry (use their taskId) and anything new the user's notes clearly ask for (taskId null). Order by priority. Give realistic times: important or hard things in the morning, nothing between 00:00 and 07:00, keep a task's existing time if it had one, leave time null for small anytime things. Titles in short Egyptian Arabic.
+- plan.items: tomorrow's items, max 6. Include the missed tasks the user chose to carry (use their taskId) and anything new the user's notes clearly ask for (taskId null). Order by priority. Give realistic times: important or hard things in the morning, nothing between 00:00 and 07:00, keep a task's existing time if it had one, leave time null for small anytime things. Titles in short Egyptian Arabic.
 Never invent tasks that are not implied by the input.`;
 
 const PARSE_SYSTEM = `You are the brain of "فكرني", an Egyptian reminders app. The user dictated a voice note (speech-to-text, may be messy, Egyptian dialect, may mix English).

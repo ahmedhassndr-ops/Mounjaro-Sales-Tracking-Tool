@@ -38,7 +38,7 @@
   function fresh() {
     return {
       v: 1, onboarded: false,
-      profile: { name: '', coach: 'sarcastic', sound: true, notif: false, hideInstall: false },
+      profile: { name: '', coach: 'sarcastic', sound: true, notif: false, hideInstall: false, autoMic: true },
       tasks: [], goals: [], people: [], reviews: {},
       stats: { xp: 0, days: {}, best: 0, total: 0, onTime: 0, killed: 0, calls: 0, voice: 0, focus: 0, goalHits: 0, bigDone: 0, snoozes: {}, badges: [] }
     };
@@ -596,6 +596,7 @@
     h += '<div class="sec"><h3>الإعدادات</h3></div>' +
       '<button class="rowbtn" data-act="share"><span class="e">📣</span><span>ابعت مستواك لصحابك</span><small>تحدّاهم</small></button>' +
       '<button class="rowbtn" data-act="notif"><span class="e">🔔</span><span>الإشعارات</span><small>' + notifLabel() + '</small></button>' +
+      '<button class="rowbtn" data-act="automic"><span class="e">🎙️</span><span>يسمعك أول ما تفتحه</span><small>' + (S.profile.autoMic ? 'شغال' : 'مقفول') + '</small></button>' +
       '<button class="rowbtn" data-act="sound"><span class="e">' + (S.profile.sound ? '🔊' : '🔇') + '</span><span>الأصوات</span><small>' + (S.profile.sound ? 'شغالة' : 'مقفولة') + '</small></button>' +
       '<button class="rowbtn" data-act="rename"><span class="e">✏️</span><span>اسمي</span><small>' + esc(S.profile.name || '—') + '</small></button>' +
       (isIOS && !isStandalone ? '<button class="rowbtn" data-act="install"><span class="e">📲</span><span>ضيفه للشاشة الرئيسية</span><small>زي الأبلكيشن</small></button>' : '') +
@@ -676,7 +677,8 @@
     };
     var now = new Date();
     postAI({ mode: 'review', day: payload, now: now.toString(), weekday: WDF[now.getDay()] }).then(function (r) {
-      var plan = r && Array.isArray(r.plan) ? r.plan : carry.map(function (t) { return { taskId: t.id, title: t.title, time: t.time, priority: t.priority || 'normal' }; });
+      var aiPlan = r && r.plan ? (Array.isArray(r.plan) ? r.plan : r.plan.items) : null;
+      var plan = Array.isArray(aiPlan) ? aiPlan : carry.map(function (t) { return { taskId: t.id, title: t.title, time: t.time, priority: t.priority || 'normal' }; });
       var fb = r && r.feedback ? r.feedback : localFeedback(d);
       var rv = { date: k, done: d.done.length, total: d.done.length + d.missed.length, good: good, better: better, feedback: fb, plan: plan, applied: false };
       S.reviews[k] = rv;
@@ -926,6 +928,7 @@
       case 'person-tpl': personSheet(null, PEOPLE_TPL[+b.dataset.i]); break;
       case 'edit-person': { var pp = S.people.filter(function (x) { return x.id === id; })[0]; if (pp) personSheet(pp); break; }
       case 'coach-set': S.profile.coach = b.dataset.k; save(); renderMe(); toast(COACHES[b.dataset.k].face, say('done')); break;
+      case 'automic': S.profile.autoMic = !S.profile.autoMic; save(); renderMe(); toast('🎙️', S.profile.autoMic ? 'هسمعك أول ما تفتح التطبيق' : 'خلاص، هتدوس على المايك بنفسك'); break;
       case 'sound': S.profile.sound = !S.profile.sound; save(); renderMe(); sfx('tick'); break;
       case 'notif': enableNotifs(); break;
       case 'rename': { var n = prompt('اسمك إيه؟', S.profile.name || ''); if (n != null) { S.profile.name = n.trim(); save(); render(); } break; }
@@ -1423,6 +1426,17 @@
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(function () { });
   if (!S.onboarded) onboarding();
   render(); catchUp(); scheduleNotifs();
+  // Like Siri: opening the app goes straight to listening (on launch, and when coming back after a few minutes).
+  var hiddenAt = 0;
+  function autoListen() {
+    if (!S.onboarded || !S.profile.autoMic || $('#voice').classList.contains('open') || $('#sheet').classList.contains('open') || $('#focus').classList.contains('open')) return;
+    openVoice();
+  }
+  if (S.onboarded) setTimeout(autoListen, 350);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') hiddenAt = Date.now();
+    else if (hiddenAt && Date.now() - hiddenAt > 3 * 60000) setTimeout(autoListen, 300);
+  });
   setInterval(function () { if (document.visibilityState === 'visible' && view === 'today' && !$('#sheet').classList.contains('open') && !$('#voice').classList.contains('open')) renderToday(); }, 60000);
   window.addEventListener('pageshow', function () { scheduleNotifs(); });
 })();
