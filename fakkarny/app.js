@@ -421,11 +421,62 @@
     { e: '🏋️', t: 'جيم', target: 3, period: 'week', unit: 'مرة' },
     { e: '🚶', t: 'أمشي ١٠ آلاف خطوة', target: 1, period: 'day', unit: '' },
     { e: '📖', t: 'أقرا ١٠ صفحات', target: 1, period: 'day', unit: '' },
-    { e: '🤲', t: 'الصلاة في وقتها', target: 5, period: 'day', unit: 'صلاة' },
+    { e: '🤲', t: 'الصلاة في وقتها', target: 5, period: 'day', unit: 'صلاة', kind: 'prayer' },
     { e: '📵', t: 'ساعة من غير موبايل', target: 1, period: 'day', unit: '' },
     { e: '😴', t: 'أنام بدري', target: 5, period: 'week', unit: 'ليلة' },
     { e: '✍️', t: 'هدف تاني', target: 1, period: 'day', unit: '', custom: true }
   ];
+  // ---- prayer times: computed on the phone (adhan.js, offline), from the user's location ----
+  var PRAYERS = [['fajr', 'الفجر'], ['dhuhr', 'الضهر'], ['asr', 'العصر'], ['maghrib', 'المغرب'], ['isha', 'العشا']];
+  var CAIRO = { lat: 30.0444, lng: 31.2357 };
+  function isPrayerGoal(g) { return g.kind === 'prayer' || (!g.kind && g.title === 'الصلاة في وقتها'); }
+  function prayerMethod(c) {
+    var A = window.adhan.CalculationMethod;
+    if (c.lat > 22 && c.lat < 32 && c.lng > 24 && c.lng < 37) return A.Egyptian();
+    if (c.lat > 16 && c.lat < 32.5 && c.lng >= 37 && c.lng < 56) return A.UmmAlQura();
+    if (c.lat > 22 && c.lat < 27 && c.lng >= 51 && c.lng < 57) return A.Dubai();
+    return A.MuslimWorldLeague();
+  }
+  function prayerTimes(k) {
+    if (!window.adhan) return null;
+    var c = S.profile.loc || CAIRO, A = window.adhan;
+    try {
+      var pt = new A.PrayerTimes(new A.Coordinates(c.lat, c.lng), parseDk(k || today()), prayerMethod(c));
+      return PRAYERS.map(function (p) { return { id: p[0], name: p[1], at: pt[p[0]] }; });
+    } catch (e) { return null; }
+  }
+  function hm(d) { return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+  function askLocation(after) {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      S.profile.loc = { lat: +pos.coords.latitude.toFixed(3), lng: +pos.coords.longitude.toFixed(3) }; save();
+      scheduleNotifs(); if (after) after();
+    }, function () { toast('📍', 'مقدرتش أعرف مكانك، فهحسب مواقيت القاهرة'); }, { timeout: 10000, maximumAge: 86400000 });
+  }
+  function prayerRow(g) {
+    var times = prayerTimes(); if (!times) return '';
+    var marks = (g.marks && g.marks[today()]) || {}, now = Date.now(), nextId = null;
+    for (var i = 0; i < times.length; i++) if (!marks[times[i].id] && times[i].at.getTime() > now) { nextId = times[i].id; break; }
+    var h = '<div class="prayers">';
+    times.forEach(function (p) {
+      var on = !!marks[p.id], cls = on ? ' on' : p.id === nextId ? ' next' : p.at.getTime() < now ? ' missed' : '';
+      var mins = Math.round((p.at.getTime() - now) / 60000);
+      var sub = p.id === nextId && mins < 180 ? 'بعد ' + ar(mins >= 60 ? Math.floor(mins / 60) + ':' + pad2(mins % 60) : mins + ' د') : fmtTime(hm(p.at)).replace(/ .*/, '');
+      h += '<button class="pr' + cls + '" data-act="prayer" data-id="' + g.id + '" data-p="' + p.id + '"><b>' + p.name + '</b><small>' + sub + '</small></button>';
+    });
+    h += '</div><button class="prloc" data-act="prayer-loc">' + (S.profile.loc ? 'المواقيت حسب مكانك' : 'مواقيت القاهرة. دوس عشان أحسبها لمكانك') + '</button>';
+    return h;
+  }
+  function prayerToggle(g, pid, btn) {
+    var k = today(); g.marks = g.marks || {}; var m = g.marks[k] = g.marks[k] || {};
+    var r = btn.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    if (m[pid]) { delete m[pid]; g.log[k] = Object.keys(m).length; addXP(-3); logActivity(-1); save(); renderGoals(); return; }
+    m[pid] = Date.now(); var c = Object.keys(m).length; g.log[k] = c;
+    var xp = 3; logActivity(1);
+    if (c >= g.target) { xp += 15; S.stats.goalHits++; burst(cx, cy, 90); sfx('level'); toast(g.emoji, 'صليت الخمس فروض النهارده'); }
+    else { burst(cx, cy, 14); sfx('tick'); }
+    addXP(xp, cx, cy - 30); buzz(12); checkBadges(); save(); renderGoals();
+  }
   function gKey(g, k) { return g.period === 'week' ? weekKey(k || today()) : (k || today()); }
   function gCount(g, k) { return g.log[gKey(g, k)] || 0; }
   function renderGoals() {
@@ -438,7 +489,8 @@
       h += '<div class="list" style="margin-top:6px">';
       S.goals.forEach(function (g, i) {
         var c = gCount(g), pct = c / g.target, comp = c >= g.target, dots = '';
-        if (g.target <= 12) for (var j = 0; j < g.target; j++) dots += '<i class="' + (j < c ? 'on' : '') + '"></i>';
+        var isPr = isPrayerGoal(g);
+        if (g.target <= 12 && !isPr) for (var j = 0; j < g.target; j++) dots += '<i class="' + (j < c ? 'on' : '') + '"></i>';
         var week = '';
         if (g.period === 'day') {
           week = '<div style="display:flex;gap:4px;margin-top:10px;align-items:flex-end;height:22px">';
@@ -447,8 +499,8 @@
         }
         h += '<div class="goal' + (comp ? ' complete' : '') + '" data-gid="' + g.id + '" style="animation:enter .5s ' + (i * 60) + 'ms both cubic-bezier(.2,.9,.25,1.15)">' +
           '<div class="ring">' + ringSVG(58, 6, pct, 'g' + i, comp ? 'var(--green)' : null) + '<div class="v">' + esc(g.emoji) + '</div></div>' +
-          '<div class="gl" data-act="edit-goal" data-id="' + g.id + '"><h4>' + esc(g.title) + '</h4><p>' + ar(c) + ' / ' + ar(g.target) + ' ' + esc(g.unit || '') + ' • ' + (g.period === 'week' ? 'الأسبوع ده' : 'النهارده') + (comp ? ' • خلص' : '') + '</p>' + (dots ? '<div class="dots">' + dots + '</div>' : '') + week + '</div>' +
-          '<button class="plus chunky" data-act="goal-plus" data-id="' + g.id + '">' + (comp ? '✓' : '＋') + '</button></div>';
+          '<div class="gl" data-act="edit-goal" data-id="' + g.id + '"><h4>' + esc(g.title) + '</h4><p>' + ar(c) + ' / ' + ar(g.target) + ' ' + esc(g.unit || '') + ' • ' + (g.period === 'week' ? 'الأسبوع ده' : 'النهارده') + (comp ? ' • خلص' : '') + '</p>' + (dots ? '<div class="dots">' + dots + '</div>' : '') + (isPr ? '' : week) + '</div>' +
+          (isPr ? prayerRow(g) : '<button class="plus chunky" data-act="goal-plus" data-id="' + g.id + '">' + (comp ? '✓' : '＋') + '</button>') + '</div>';
       });
       h += '</div>';
     }
@@ -640,7 +692,7 @@
   }
   function goalSheet(g, tpl) {
     var isNew = !g;
-    g = g || { id: uid(), title: tpl.custom ? '' : tpl.t, emoji: tpl.e, target: tpl.target, period: tpl.period, unit: tpl.unit, log: {}, created: Date.now() };
+    g = g || { id: uid(), title: tpl.custom ? '' : tpl.t, emoji: tpl.e, target: tpl.target, period: tpl.period, unit: tpl.unit, kind: tpl.kind || null, log: {}, created: Date.now() };
     var html = '<h2>' + esc(g.emoji) + ' ' + (isNew ? 'هدف جديد' : esc(g.title)) + '</h2>' +
       '<div class="field"><label>الهدف</label><input id="gT" value="' + esc(g.title) + '" placeholder="مثلاً: أذاكر ساعة"></div>' +
       '<div class="row2"><div class="field"><label>كام مرة؟</label><input id="gN" type="number" inputmode="numeric" min="1" max="50" value="' + g.target + '"></div>' +
@@ -657,7 +709,7 @@
             g.title = $('#gT').value.trim(); if (!g.title) { $('#gT').focus(); return; }
             g.target = clamp(parseInt($('#gN').value, 10) || 1, 1, 50); g.period = $('#gP').value;
             var e = $('#gE button.on', root); if (e) g.emoji = e.dataset.e;
-            if (isNew) { S.goals.push(g); toast('🎯', 'تمام. كل ما تعمله دوس ＋'); }
+            if (isNew) { S.goals.push(g); if (isPrayerGoal(g)) { toast('🤲', 'دوس على كل صلاة لما تصليها'); if (!S.profile.loc) askLocation(renderGoals); } else toast('🎯', 'تمام. كل ما تعمله دوس ＋'); }
           }
           if (a === 'minus') { var k = gKey(g); g.log[k] = Math.max(0, (g.log[k] || 0) - 1); }
           if (a === 'del') S.goals = S.goals.filter(function (x) { return x.id !== g.id; });
@@ -755,6 +807,8 @@
       case 'called': { var p = S.people.filter(function (x) { return x.id === id; })[0]; if (p) called(p, b); break; }
       case 'add-goal': openSheet('<h2>اختار هدف</h2>' + goalTplHTML()); break;
       case 'goal-tpl': goalSheet(null, GOAL_TPL[+b.dataset.i]); break;
+      case 'prayer': { var pg = S.goals.filter(function (x) { return x.id === id; })[0]; if (pg) prayerToggle(pg, b.dataset.p, b); break; }
+      case 'prayer-loc': askLocation(function () { renderGoals(); toast('📍', 'المواقيت اتحسبت لمكانك'); }); break;
       case 'goal-plus': { var g = S.goals.filter(function (x) { return x.id === id; })[0]; if (g) goalPlus(g, b); break; }
       case 'edit-goal': { var g2 = S.goals.filter(function (x) { return x.id === id; })[0]; if (g2) goalSheet(g2); break; }
       case 'add-person': openSheet('<h2>عايز تفضل قريب من مين؟</h2><div class="tpl-grid">' + PEOPLE_TPL.map(function (p, i) { return '<button class="tpl" data-act="person-tpl" data-i="' + i + '"><div class="e">' + p.e + '</div><b>' + p.n + '</b><small>' + (p.custom ? 'أي حد' : everyLabel(p.every)) + '</small></button>'; }).join('') + '</div>'); break;
@@ -1079,6 +1133,15 @@
         var ms = at.getTime() - now;
         if (ms > 0 && ms < 2147483000) timers.push(setTimeout(function () { ping(t, k); }, ms));
       });
+    });
+    schedulePrayers();
+  }
+  function schedulePrayers() {
+    var pg = S.goals.filter(isPrayerGoal)[0]; if (!pg) return;
+    var times = prayerTimes(), now = Date.now(); if (!times) return;
+    times.forEach(function (p) {
+      var ms = p.at.getTime() - now;
+      if (ms > 0) timers.push(setTimeout(function () { var m = (pg.marks && pg.marks[today()]) || {}; if (m[p.id]) return; notify('🤲 ' + p.name, 'جه وقت ' + p.name, 'prayer-' + p.id); if (document.visibilityState === 'visible') { toast('🤲', 'جه وقت <b>' + p.name + '</b>'); sfx('ping'); renderGoals(); } }, ms));
     });
   }
   function ping(t, k) {

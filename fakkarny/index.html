@@ -136,6 +136,18 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .tag.big{color:var(--gold);background:var(--gold-soft)}
 .tag.rep{color:var(--blue);background:var(--blue-soft)}
 .tag.hi{color:#fff;background:var(--red)}
+.prayers{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px;width:100%}
+.pr{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 2px;border-radius:12px;background:var(--surface2);border:1.5px solid var(--line);transition:transform .15s var(--ease)}
+.pr:active{transform:scale(.94)}
+.pr b{font-size:13px;font-weight:600}
+.pr small{font-size:11.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+.pr.next{border-color:var(--brand);background:var(--brand-soft)}
+.pr.next small{color:var(--brand-d);font-weight:600}
+.pr.on{background:var(--green);border-color:var(--green);color:#fff}
+.pr.on small{color:#fff;opacity:.85}
+.pr.missed small{color:var(--red)}
+.goal:has(.prayers){flex-wrap:wrap}
+.prloc{display:block;margin-top:8px;font-size:12px;color:var(--mute);text-decoration:underline;text-underline-offset:3px;width:100%;text-align:start}
 .task.hi .card{border-inline-start:4px solid var(--red)}
 .task .notes,.rcard .notes{font-size:13px;color:var(--mute);line-height:1.6;margin-top:6px;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .rcard .notes{-webkit-line-clamp:6}
@@ -424,6 +436,7 @@ button.tag{border:0;cursor:pointer}
 <canvas id="fx"></canvas>
 <div id="onb"></div>
 
+<script src="adhan.min.js"></script>
 <script src="parser.js"></script>
 <script src="app.js"></script>
 </body>

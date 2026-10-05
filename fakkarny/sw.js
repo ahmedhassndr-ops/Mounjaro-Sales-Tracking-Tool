@@ -1,6 +1,6 @@
 // فكرني service worker: offline shell + notifications.
-const CACHE = 'fakkarny-v4';
-const SHELL = ['./', './index.html', './app.js', './parser.js', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png', './fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2', './fonts/ibm-plex-sans-arabic-arabic-500-normal.woff2', './fonts/alexandria-arabic-700-normal.woff2'];
+const CACHE = 'fakkarny-v5';
+const SHELL = ['./', './index.html', './app.js', './parser.js', './adhan.min.js', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png', './fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2', './fonts/ibm-plex-sans-arabic-arabic-500-normal.woff2', './fonts/alexandria-arabic-700-normal.woff2'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
