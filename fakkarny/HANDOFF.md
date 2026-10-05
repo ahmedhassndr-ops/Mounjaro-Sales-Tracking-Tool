@@ -16,7 +16,8 @@ A voice-first life organizer in Egyptian Arabic. You say "فكرني بكرة ا
 ## Do these first (in the local session)
 1. **Run the humanizer skill** on every user-facing string. They're in `app.js` (`LINES` coach messages, onboarding, toasts, empty states, sheet labels) and `index.html`. Goal: it reads like an Egyptian friend wrote it, with no AI phrasing and fewer emoji.
 2. **Run the UI/design skills** for a proper design pass. The current look is a first pass: warm paper background, one orange brand color (`#E8590C`), flat cards, chunky "3D" buttons (Duolingo-style), light and dark themes. Keep it flat and real-product-like. Design tokens live at the top of the `<style>` block in `index.html` (`:root`).
-3. **Fonts:** currently self-hosted **Alexandria** (headings) and **IBM Plex Sans Arabic** (body) in `fonts/`. Thmanyah Sans was considered, but its license forbids self-hosting. If you change fonts, keep them self-hosted (the PWA must work offline) and add them to `SHELL` in `sw.js`.
+3. **Competitor UI teardown (not done yet):** the cloud session couldn't open the store pages. Open **Say** (Egyptian voice expense tracker, 99 EGP/mo, 4.5–4.8★, 100K+ downloads) and **Axion: AI Voice Planner** (Egyptian voice planner, closest competitor). Screenshot their home, add-item, settings and paywall screens, and compare them screen by screen with Fakkarny. Known UI issues to fix here: the home screen is too busy (tasks should come first), the mic needs a first-time hint, swipe gestures are hard to discover, and it hasn't been tested on a real iPhone yet.
+4. **Fonts:** currently self-hosted **Alexandria** (headings) and **IBM Plex Sans Arabic** (body) in `fonts/`. Thmanyah Sans was considered, but its license forbids self-hosting. If you change fonts, keep them self-hosted (the PWA must work offline) and add them to `SHELL` in `sw.js`.
 
 ## File map
 | File | What |
