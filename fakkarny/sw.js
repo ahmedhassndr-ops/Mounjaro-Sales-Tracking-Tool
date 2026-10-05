@@ -1,5 +1,5 @@
 // فكرني service worker: offline shell + notifications.
-const CACHE = 'fakkarny-v12';
+const CACHE = 'fakkarny-v13';
 const SHELL = ['./', './index.html', './app.js', './parser.js', './adhan.min.js', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png', './fonts/readex-pro-arabic-400-normal.woff2', './fonts/readex-pro-arabic-500-normal.woff2', './fonts/readex-pro-arabic-700-normal.woff2', './fonts/readex-pro-arabic-600-normal.woff2' ];
 
 self.addEventListener('install', (e) => {
@@ -42,7 +42,16 @@ self.addEventListener('push', (e) => {
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const url = e.notification.data && e.notification.data.url;
-  if (url) { e.waitUntil(self.clients.openWindow(url)); return; }
+  if (url) {
+    // iOS won't open a wa.me link straight from a notification, so open the app on a "send" screen.
+    e.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+        for (const c of list) { if ('focus' in c) { c.postMessage({ go: url }); return c.focus(); } }
+        return self.clients.openWindow('./?go=' + encodeURIComponent(url));
+      })
+    );
+    return;
+  }
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const c of list) { if ('focus' in c) return c.focus(); }

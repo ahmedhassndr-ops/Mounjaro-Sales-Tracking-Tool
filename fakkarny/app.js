@@ -203,6 +203,15 @@
     if (!ph && to) { var pp = findPerson(to); if (pp && pp.phone) ph = pp.phone; }
     return { to: to, phone: ph, text: x.message || x.text };
   }
+  function deviceId() { if (!S.profile.device) { S.profile.device = uid().replace(/[^a-z0-9]/gi, ''); save(); } return S.profile.device; }
+  function isWaUrl(u) { return typeof u === 'string' && /^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(u); }
+  function goSendSheet(url) {
+    if (!isWaUrl(url)) return;
+    var m = url.match(/[?&]text=([^&]*)/), txt = m ? decodeURIComponent(m[1]) : '', ph = (url.match(/wa\.me\/(\d+)/) || [])[1] || '';
+    openSheet('<h2>ابعت الرسالة دلوقتي</h2>' + (ph ? '<p style="color:var(--mute);margin:-6px 0 10px;direction:ltr;text-align:right">+' + esc(ph) + '</p>' : '') +
+      '<div class="said" style="background:var(--surface2);border-radius:14px;padding:12px;line-height:1.7;margin-bottom:14px">' + esc(txt) + '</div>' +
+      '<div class="acts"><a class="act pri full" href="' + esc(url) + '" target="_blank" rel="noopener" style="text-decoration:none">افتح واتساب وابعت</a></div>');
+  }
   function waLink(sd) { return 'https://wa.me/' + (sd.phone || '') + '?text=' + encodeURIComponent(sd.text || ''); }
   function sendNow(t, k) {
     if (!t.send) return;
@@ -279,12 +288,13 @@
   function snooze(t, mode) {
     var k = today(), now = new Date();
     if (t.repeat !== 'none') {
-      var at = mode === 'hour' ? new Date(now.getTime() + 3600000) : null;
+      var mins = { m5: 5, m15: 15, hour: 60 }[mode], at = mins ? new Date(now.getTime() + mins * 60000) : null;
       if (at && dk(at) === k) t.over[k] = pad2(at.getHours()) + ':' + pad2(at.getMinutes());
       else if (mode === 'night') t.over[k] = '21:00';
       else { t.skip = t.skip || {}; t.skip[k] = 1; } // repeating: skip today, it comes back tomorrow
     } else {
-      if (mode === 'hour') { var a = new Date(now.getTime() + 3600000); t.date = dk(a); t.time = pad2(a.getHours()) + ':' + pad2(a.getMinutes()); }
+      var mn = { m5: 5, m15: 15, hour: 60 }[mode];
+      if (mn) { var a = new Date(now.getTime() + mn * 60000); t.date = dk(a); t.time = pad2(a.getHours()) + ':' + pad2(a.getMinutes()); }
       else if (mode === 'night') { t.date = k; t.time = '21:00'; }
       else if (mode === 'tomorrow') { t.date = dk(addDays(now, 1)); t.time = t.time || null; }
       else if (mode === 'tmorning') { t.date = dk(addDays(now, 1)); t.time = '09:00'; }
@@ -292,7 +302,7 @@
     t.snoozes = (t.snoozes || 0) + 1;
     S.stats.snoozes[k] = (S.stats.snoozes[k] || 0) + 1;
     save(); render(); scheduleNotifs();
-    toast('⏰', say('snooze') + (t.snoozes >= 3 ? ' (أجّلتها ' + ar(t.snoozes) + ' مرات)' : ''));
+    toast('⏰', say('snooze') + (t.snoozes >= 3 ? ' (أجّلتها ' + ar(t.snoozes) + ' مرات)' : '') + (pushOk === false ? '<br><small>تنبيه: الإشعار هيوصل بس لو فكرني مفتوح، الإشعارات في الخلفية مش متفعّلة.</small>' : ''));
     sfx('snooze');
   }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
@@ -471,7 +481,7 @@
   var GOAL_TPL = [
     { e: '💧', t: 'أشرب مية', target: 8, period: 'day', unit: 'كوباية' },
     { e: '🏋️', t: 'جيم', target: 3, period: 'week', unit: 'مرة' },
-    { e: '🚶', t: 'أمشي ١٠ آلاف خطوة', target: 1, period: 'day', unit: '' },
+    { e: '🚶', t: 'أمشي ٥٠٠٠ خطوة', target: 5000, period: 'day', unit: 'خطوة', kind: 'steps' },
     { e: '📖', t: 'أقرا ١٠ صفحات', target: 1, period: 'day', unit: '' },
     { e: '🤲', t: 'الصلاة في وقتها', target: 5, period: 'day', unit: 'صلاة', kind: 'prayer' },
     { e: '📵', t: 'ساعة من غير موبايل', target: 1, period: 'day', unit: '' },
@@ -481,6 +491,32 @@
   // ---- prayer times: computed on the phone (adhan.js, offline), from the user's location ----
   var PRAYERS = [['fajr', 'الفجر'], ['dhuhr', 'الضهر'], ['asr', 'العصر'], ['maghrib', 'المغرب'], ['isha', 'العشا']];
   var CAIRO = { lat: 30.0444, lng: 31.2357 };
+  function isStepsGoal(g) { return g.kind === 'steps' || /خطو/.test(g.title || ''); }
+  function stepsUrl() { return location.origin + '/api/steps?d=' + deviceId() + '&n='; }
+  function stepsSheet() {
+    openSheet('<h2>🚶 اربط خطواتك من الآيفون</h2><p style="color:var(--mute);line-height:1.8;margin:-4px 0 12px">مرة واحدة بس، وبعدها فكرني يعرف خطواتك لوحده من Apple Health.</p><div class="ios-steps">' +
+      '<div><b>١</b><span>افتح تطبيق <strong>Shortcuts</strong> ← <strong>Automation</strong> ← <strong>+</strong> ← <strong>Time of Day</strong>، اختار ٩ بالليل، و<strong>Run Immediately</strong>.</span></div>' +
+      '<div><b>٢</b><span>ضيف <strong>Find Health Samples</strong>: النوع <strong>Steps</strong>، والتاريخ <strong>Is Today</strong>.</span></div>' +
+      '<div><b>٣</b><span>ضيف <strong>Calculate Statistics</strong> واختار <strong>Sum</strong>.</span></div>' +
+      '<div><b>٤</b><span>ضيف <strong>Get Contents of URL</strong> وحط اللينك ده، وفي آخره حط نتيجة <strong>Statistics</strong>:</span></div></div>' +
+      '<div class="field" style="margin-top:10px"><input id="stUrl" readonly style="direction:ltr;font-size:13px" value="' + esc(stepsUrl()) + '"></div>' +
+      '<div class="acts"><button class="act pri full" id="stCopy">انسخ اللينك</button></div>' +
+      '<p style="color:var(--dim);font-size:12.5px;margin-top:10px;line-height:1.7">تقدر تعمل كذا أوتوميشن (الضهر والعصر وبالليل) عشان العدّاد يتحدّث طول اليوم.</p>', function (root) {
+      $('#stCopy', root).onclick = function () { var v = $('#stUrl', root).value; if (navigator.clipboard) navigator.clipboard.writeText(v).then(function () { toast('📋', 'اتنسخ'); }); else { $('#stUrl', root).select(); document.execCommand('copy'); toast('📋', 'اتنسخ'); } };
+    });
+  }
+  function pullSteps() {
+    var g = S.goals.filter(isStepsGoal)[0]; if (!g || !S.profile.device || location.protocol !== 'https:') return;
+    fetch('/api/steps?d=' + S.profile.device).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || !j.days) return;
+      var before = gCount(g), changed = false;
+      Object.keys(j.days).forEach(function (k) { var n = +j.days[k] || 0; if (n > (g.log[k] || 0)) { g.log[k] = n; changed = true; } });
+      if (!changed) return;
+      var now = gCount(g);
+      if (before < g.target && now >= g.target) { S.stats.goalHits++; logActivity(1); addXP(18); burst(innerWidth / 2, innerHeight / 3, 90); sfx('level'); toast('🚶', 'كمّلت <b>' + ar(now) + '</b> خطوة النهارده. عاش!'); checkBadges(); }
+      save(); render();
+    }).catch(function () { });
+  }
   function isPrayerGoal(g) { return g.kind === 'prayer' || (!g.kind && g.title === 'الصلاة في وقتها'); }
   function prayerMethod(c) {
     var A = window.adhan.CalculationMethod;
@@ -552,7 +588,7 @@
         h += '<div class="goal' + (comp ? ' complete' : '') + '" data-gid="' + g.id + '" style="animation:enter .5s ' + (i * 60) + 'ms both cubic-bezier(.2,.9,.25,1.15)">' +
           '<div class="ring">' + ringSVG(58, 6, pct, 'g' + i, comp ? 'var(--green)' : null) + '<div class="v">' + esc(g.emoji) + '</div></div>' +
           '<div class="gl" data-act="edit-goal" data-id="' + g.id + '"><h4>' + esc(g.title) + '</h4><p>' + ar(c) + ' / ' + ar(g.target) + ' ' + esc(g.unit || '') + ' • ' + (g.period === 'week' ? 'الأسبوع ده' : 'النهارده') + (comp ? ' • خلص' : '') + '</p>' + (dots ? '<div class="dots">' + dots + '</div>' : '') + (isPr ? '' : week) + '</div>' +
-          (isPr ? prayerRow(g) : '<button class="plus chunky" data-act="goal-plus" data-id="' + g.id + '">' + (comp ? '✓' : '＋') + '</button>') + '</div>';
+          (isPr ? prayerRow(g) : isStepsGoal(g) ? '<button class="plus chunky" data-act="steps-link" style="font-size:13px;font-weight:600">' + (comp ? '✓' : 'اربط') + '</button>' : '<button class="plus chunky" data-act="goal-plus" data-id="' + g.id + '">' + (comp ? '✓' : '＋') + '</button>') + '</div>';
       });
       h += '</div>';
     }
@@ -861,7 +897,7 @@
   }
   function snoozeSheet(t) {
     openSheet('<h2>أجّلها لإمتى؟</h2><p style="color:var(--mute);margin:-6px 0 14px;font-size:14px">' + esc(say('snooze')) + '</p><div class="acts">' +
-      '<button class="act" data-m="hour">بعد ساعة</button><button class="act" data-m="night">بالليل (٩)</button>' +
+      '<button class="act" data-m="m5">بعد ٥ دقايق</button><button class="act" data-m="m15">بعد ربع ساعة</button><button class="act" data-m="hour">بعد ساعة</button><button class="act" data-m="night">بالليل (٩)</button>' +
       '<button class="act" data-m="tmorning">بكرة الصبح</button><button class="act" data-m="tomorrow">بكرة</button>' +
       '<button class="act pri full" data-m="focus">لأ، هشتغل عليها ٥ دقايق دلوقتي</button></div>', function (root) {
       $$('[data-m]', root).forEach(function (b) { b.onclick = function () { closeSheet(); if (b.dataset.m === 'focus') openFocus(t); else snooze(t, b.dataset.m); }; });
@@ -884,9 +920,9 @@
           var a = b.dataset.ga;
           if (a === 'save') {
             g.title = $('#gT').value.trim(); if (!g.title) { $('#gT').focus(); return; }
-            g.target = clamp(parseInt($('#gN').value, 10) || 1, 1, 50); g.period = $('#gP').value;
+            g.target = clamp(parseInt($('#gN').value, 10) || 1, 1, isStepsGoal(g) ? 100000 : 50); g.period = $('#gP').value;
             var e = $('#gE button.on', root); if (e) g.emoji = e.dataset.e;
-            if (isNew) { S.goals.push(g); if (isPrayerGoal(g)) { toast('🤲', 'دوس على كل صلاة لما تصليها'); if (!S.profile.loc) askLocation(renderGoals); } else toast('🎯', 'تمام. كل ما تعمله دوس ＋'); }
+            if (isNew) { S.goals.push(g); if (isPrayerGoal(g)) { toast('🤲', 'دوس على كل صلاة لما تصليها'); if (!S.profile.loc) askLocation(renderGoals); } else if (isStepsGoal(g)) { g.kind = 'steps'; g.unit = g.unit || 'خطوة'; setTimeout(stepsSheet, 450); } else toast('🎯', 'تمام. كل ما تعمله دوس ＋'); }
           }
           if (a === 'minus') { var k = gKey(g); g.log[k] = Math.max(0, (g.log[k] || 0) - 1); }
           if (a === 'del') S.goals = S.goals.filter(function (x) { return x.id !== g.id; });
@@ -993,6 +1029,7 @@
       case 'goal-tpl': goalSheet(null, GOAL_TPL[+b.dataset.i]); break;
       case 'prayer': { var pg = S.goals.filter(function (x) { return x.id === id; })[0]; if (pg) prayerToggle(pg, b.dataset.p, b); break; }
       case 'prayer-loc': askLocation(function () { renderGoals(); toast('📍', 'المواقيت اتحسبت لمكانك'); }); break;
+      case 'steps-link': stepsSheet(); break;
       case 'goal-plus': { var g = S.goals.filter(function (x) { return x.id === id; })[0]; if (g) goalPlus(g, b); break; }
       case 'edit-goal': { var g2 = S.goals.filter(function (x) { return x.id === id; })[0]; if (g2) goalSheet(g2); break; }
       case 'add-person': openSheet('<h2>عايز تفضل قريب من مين؟</h2><div class="tpl-grid">' + PEOPLE_TPL.map(function (p, i) { return '<button class="tpl" data-act="person-tpl" data-i="' + i + '"><div class="e">' + p.e + '</div><b>' + p.n + '</b><small>' + (p.custom ? 'أي حد' : everyLabel(p.every)) + '</small></button>'; }).join('') + '</div>'); break;
@@ -1337,17 +1374,18 @@
   // The server holds the next 3 days of reminders; the app resyncs on every change and on open.
   function urlB64(b) { var p = '='.repeat((4 - b.length % 4) % 4), s = atob((b + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
   function pushCapable() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && Notification.permission === 'granted' && location.protocol === 'https:'; }
+  var pushOk = null; // null = unknown, false = background push not available, true = working
   function ensurePush() {
-    if (!pushCapable()) return Promise.resolve(null);
+    if (!pushCapable()) { pushOk = false; return Promise.resolve(null); }
     return fetch('/api/push').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-      if (!j || !j.ok || !j.publicKey) return null;
+      if (!j || !j.ok || !j.publicKey) { pushOk = false; return null; }
       return navigator.serviceWorker.ready.then(function (reg) {
         return reg.pushManager.getSubscription().then(function (sub) { return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(j.publicKey) }); });
       });
     }).then(function (sub) {
-      if (sub) { if (!S.profile.device) S.profile.device = uid().replace(/[^a-z0-9]/gi, ''); if (!S.profile.push) { S.profile.push = true; save(); } }
+      if (sub) { deviceId(); pushOk = true; if (!S.profile.push) { S.profile.push = true; save(); } } else pushOk = false;
       return sub;
-    }).catch(function () { return null; });
+    }).catch(function () { pushOk = false; return null; });
   }
   function pushItems() {
     var out = [], now = Date.now(), pg = S.goals.filter(isPrayerGoal)[0];
@@ -1368,15 +1406,16 @@
     return out;
   }
   var pushT = null;
-  function syncPush() {
-    clearTimeout(pushT);
-    pushT = setTimeout(function () {
-      ensurePush().then(function (sub) {
-        if (!sub) return;
-        fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync', device: S.profile.device, sub: sub.toJSON(), items: pushItems() }) }).catch(function () { });
-      });
-    }, 1200);
+  function pushNow() {
+    return ensurePush().then(function (sub) {
+      if (!sub) return;
+      // keepalive: the request still goes out if iOS suspends the app right after a change
+      return fetch('/api/push', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync', device: S.profile.device, sub: sub.toJSON(), items: pushItems() }) })
+        .then(function (r) { if (!r.ok) pushOk = false; }).catch(function () { });
+    });
   }
+  function syncPush() { clearTimeout(pushT); pushT = setTimeout(pushNow, 150); }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden' && pushT) { clearTimeout(pushT); pushT = null; pushNow(); } });
   function ping(t, k) {
     if (isDone(t, k)) return;
     t.pinged = t.pinged || {}; t.pinged[k] = 1; save();
@@ -1608,9 +1647,16 @@
   }
 
   // ================= boot =================
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(function () { });
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(function () { });
+    navigator.serviceWorker.addEventListener('message', function (e) { if (e.data && e.data.go) goSendSheet(e.data.go); });
+  }
+  (function () { // opened from a notification: ?go=<whatsapp link>
+    try { var q = new URLSearchParams(location.search), go = q.get('go'); if (go) { history.replaceState(null, '', location.pathname); setTimeout(function () { goSendSheet(go); }, 500); } } catch (_) { }
+  })();
   if (!S.onboarded) onboarding();
-  render(); catchUp(); scheduleNotifs();
+  render(); catchUp(); scheduleNotifs(); pullSteps();
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') pullSteps(); });
   // Like Siri: opening the app goes straight to listening (on launch, and when coming back after a few minutes).
   var hiddenAt = 0;
   function autoListen() {
