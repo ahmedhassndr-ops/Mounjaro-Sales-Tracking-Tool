@@ -1,4 +1,4 @@
-/* فكرني — app logic. Vanilla JS, no build step. Data lives on the device (localStorage). */
+/* فكرني، app logic. Vanilla JS, no build step. Data lives on the device (localStorage). */
 (function () {
   'use strict';
   var P = window.FakkarnyParser;
@@ -50,40 +50,40 @@
 
   // ================= coach =================
   var COACHES = {
-    sarcastic: { name: 'صاحبك الرخم', face: '😏', desc: 'بيهزر ويقلش عليك، بس مش هيسيبك تأجل' },
+    sarcastic: { name: 'صاحبك الرخم', face: '😏', desc: 'بيهزر ويقلش عليك، بس مش هيسيبك تأجّل' },
     mom: { name: 'ماما الحنينة', face: '🥰', desc: 'حنينة وبتشجعك بكل حب' },
     sergeant: { name: 'الشاويش', face: '🪖', desc: 'حازم ومفيش هزار. نفّذ!' }
   };
   var LINES = {
     sarcastic: {
-      empty: ['يومك فاضي؟ يا إما إنت فاضي فعلاً يا إما ناسي حاجة 😏 دوس المايك', 'ولا حاجة النهارده؟ مشكوك فيك يا {name}… قول "فكرني" وخلّصني', 'الصفحة فاضية… زي دماغك الصبح كده 😂 قول اللي عندك'],
-      left: ['لسه فاضلك {n}… مش هيعملوا نفسهم يا باشا 😏', '{n} حاجات مستنياك وإنت بتقلّب في الموبايل. أنا شايفك 👀', 'خلّص واحدة بس دلوقتي يا {name} وأنا أسكت خالص', 'التأجيل ده مش هيخليهم يختفوا… بيكبروا بس 😂'],
-      overdue: ['في {n} حاجات متأخرة… التأجيل بقى هواية ولا إيه؟ 😂', '"{task}" بقالها كام يوم مستنياك. اعملها دلوقتي وخد +١٥ ⚡'],
-      allDone: ['خلّصت كله؟! مين إنت وعملت إيه في {name} الحقيقي؟ 😳🔥', 'يومك مقفول ١٠٠٪. روح نام وإنت مرتاح يا وحش 🦁'],
-      done: ['أيوه كده! 💪', 'مين ده اللي بيخلّص؟ 😎', 'ده إنت طلعت بتعرف تعمل حاجات 😂', 'واحدة كمان وتبقى أسطورة', 'كده تعجبني يا {name} 🔥'],
-      snooze: ['أجّلتها تاني؟ ماشي… أنا بعدّ 😏', 'التأجيل مش هيخليها تختفي يا {name}', 'تمام، بس المرة الجاية مش هعدّيها 👀'],
-      voice: ['تمام يا باشا، ضفت {n}. دلوقتي اعملهم بقى 😏', 'اتسجلوا! {n} حاجات. أنا هفكّرك، وإنت تنفّذ 🤝'],
-      ping: ['يلا يا {name}، ده وقتها 😏', 'الوقت جه… ومتقوليش "خمس دقايق" 😂']
+      empty: ['النهارده فاضي؟ ولا إنت ناسي حاجة؟ دوس المايك وقول.', 'مفيش ولا حاجة متسجلة يا {name}. مش مصدقك.', 'الصفحة فاضية. قول اللي في دماغك قبل ما يطير.'],
+      left: ['لسه {n} مستنيينك. مش هيخلصوا لوحدهم يا باشا.', '{n} حاجات ولسه بتقلّب في الموبايل. أنا شايفك 👀', 'خلّص واحدة بس دلوقتي وأنا هسكت.', 'كل ما تأجّل بتكبر. خلّصها وريّح دماغك.'],
+      overdue: ['عندك {n} متأخرين. التأجيل بقى هواية ولا إيه؟', '"{task}" مستنياك من كام يوم. اعملها دلوقتي وخد ١٥ نقطة زيادة.'],
+      allDone: ['خلّصت كله؟ إنت مين وعملت إيه في {name}؟ 😳', 'اليوم مقفول. روح نام وإنت مرتاح.'],
+      done: ['أيوه كده.', 'مين ده اللي بيخلّص؟ 😎', 'طلعت بتعرف تعمل حاجات أهو.', 'كمّل كده يا {name}.', 'حلو. اللي بعده.'],
+      snooze: ['أجّلتها تاني؟ ماشي، أنا بعدّ.', 'التأجيل مش هيخليها تختفي يا {name}.', 'ماشي، بس المرة الجاية مش هعدّيها.'],
+      voice: ['تمام، كتبت {n}. يلا بقى نفّذ.', 'اتسجلوا. عليّا أفكّرك، وعليك تعمل.'],
+      ping: ['يلا يا {name}، ده وقتها.', 'جه الوقت. ومتقوليش خمس دقايق.']
     },
     mom: {
-      empty: ['يومك فاضي يا حبيبي؟ قولّي محتاج تعمل إيه وأنا أفتكرلك 🥰', 'مفيش حاجة؟ طب اشرب مية وقولّي ناوي على إيه ❤️'],
-      left: ['فاضلك {n} يا قلبي، واحدة واحدة وهتخلص ❤️', 'يلا يا {name} يا حبيبي، ربنا يقويك 🤲', 'أنا واثقة فيك، كمّل ❤️'],
-      overdue: ['في {n} حاجات اتأخروا شوية، مش مشكلة… نعملهم دلوقتي؟ 🥰'],
-      allDone: ['ما شاء الله عليك! خلصت كله، فخورة بيك ❤️🎉', 'برافو يا حبيبي، يومك كله تمام 🥰'],
-      done: ['برافو عليك يا حبيبي ❤️', 'ربنا يباركلك 🤲', 'شاطر يا {name} 🥰', 'كده أنا مبسوطة منك 😍'],
-      snooze: ['ماشي يا حبيبي، بس متنساش 🥺', 'خد راحتك، أنا هفكّرك تاني ❤️'],
-      voice: ['حاضر يا قلبي، كتبتلك {n} ومش هسيبك تنساهم 🥰'],
-      ping: ['يا حبيبي جه وقتها ❤️', 'متنساش يا قلبي 🥰']
+      empty: ['يومك فاضي يا حبيبي؟ قولّي ناوي على إيه وأنا أفتكرلك.', 'مفيش حاجة النهارده؟ طب اشرب مية الأول ❤️'],
+      left: ['فاضلك {n} يا قلبي. واحدة واحدة.', 'ربنا يقويك يا {name}، قربت تخلص.', 'أنا واثقة فيك. كمّل ❤️'],
+      overdue: ['في {n} اتأخروا شوية. مش مشكلة، نعملهم دلوقتي؟'],
+      allDone: ['ما شاء الله، خلّصت كله. فخورة بيك ❤️', 'يومك كله تمام يا حبيبي.'],
+      done: ['برافو عليك يا حبيبي.', 'ربنا يباركلك.', 'شاطر يا {name} ❤️', 'كده أنا مبسوطة منك.'],
+      snooze: ['ماشي يا حبيبي، بس متنساش.', 'خد راحتك، هفكّرك تاني.'],
+      voice: ['حاضر يا قلبي، كتبتلك {n} ومش هسيبك تنساهم.'],
+      ping: ['يا حبيبي جه وقتها.', 'متنساش يا قلبي.']
     },
     sergeant: {
-      empty: ['مفيش مهام؟! ده مش أجازة يا عسكري! دوس المايك فورًا 🪖'],
-      left: ['{n} مهام متبقية! تحرّك يا {name}! 🫡', 'مفيش وقت للكلام! نفّذ! 🪖'],
-      overdue: ['{n} مهام متأخرة! ده تقصير! صلّحه حالًا! 🚨'],
-      allDone: ['المهمة اكتملت! تمام يا فندم! 🫡🎖️'],
-      done: ['تمام! 🫡', 'نُفّذ! 🎖️', 'كده الشغل! 💥', 'ممتاز يا عسكري!'],
-      snooze: ['تأجيل؟! هتتسجل عليك! 📋', 'مرة واحدة بس! 🪖'],
-      voice: ['تم تسجيل {n} أوامر! التنفيذ يبدأ الآن! 🫡'],
-      ping: ['الوقت حان! تحرّك! 🪖']
+      empty: ['مفيش مهام؟ ده مش أجازة. دوس المايك فورًا.'],
+      left: ['{n} مهام متبقية. اتحرك يا {name}.', 'مفيش وقت للكلام. نفّذ.'],
+      overdue: ['{n} مهام متأخرة. ده تقصير. صلّحه حالًا.'],
+      allDone: ['المهمة اكتملت. تمام يا فندم 🫡'],
+      done: ['تمام.', 'نُفّذ.', 'كده الشغل.', 'ممتاز يا عسكري.'],
+      snooze: ['تأجيل؟ هتتسجل عليك.', 'مرة واحدة بس.'],
+      voice: ['اتسجل {n} أوامر. التنفيذ يبدأ دلوقتي.'],
+      ping: ['الوقت جه. اتحرك.']
     }
   };
   function say(key, vars) {
@@ -146,7 +146,7 @@
     BADGES.forEach(function (b) {
       if (S.stats.badges.indexOf(b.id) < 0 && b.ok(S.stats)) {
         S.stats.badges.push(b.id);
-        setTimeout(function () { toast(b.e, 'وسام جديد: <b>' + b.t + '</b> — ' + b.d); burst(innerWidth / 2, 80, 60); sfx('badge'); }, 900);
+        setTimeout(function () { toast(b.e, 'وسام جديد: <b>' + b.t + '</b>، ' + b.d); burst(innerWidth / 2, 80, 60); sfx('badge'); }, 900);
       }
     });
   }
@@ -214,7 +214,7 @@
     if (t.person) { var pp = findPerson(t.person); if (pp) { pp.last = Date.now(); S.stats.calls++; } }
     addXP(xp, cx, cy - 20);
     burst(cx, cy, t.isBig ? 140 : 46); sfx('done'); buzz(18);
-    var line = why ? why + ' — ' + say('done') : say('done');
+    var line = why ? why + '، ' + say('done') : say('done');
     if (Math.random() < .55 || why) toast('✅', line);
     checkBadges(); save();
     if (el) { var host = el.closest('.task'); if (host) host.classList.add('is-done', 'pop'); }
@@ -300,23 +300,22 @@
     if (view === 'me') renderMe();
     freshIds = {};
   }
-  function ringSVG(size, stroke, pct, id, c1, c2) {
+  function ringSVG(size, stroke, pct, id, color) {
     var r = (size - stroke) / 2, C = 2 * Math.PI * r, off = C * (1 - clamp(pct, 0, 1));
-    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + (c1 || '#FF8A3D') + '"/><stop offset="1" stop-color="' + (c2 || '#FF3D8B') + '"/></linearGradient></defs>' +
-      '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="' + stroke + '"/>' +
-      '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="url(#' + id + ')" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + C + '" stroke-dashoffset="' + off + '" style="transition:stroke-dashoffset 1s cubic-bezier(.2,.9,.25,1)"/></svg>';
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">' +
+      '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" style="stroke:var(--track)" stroke-width="' + stroke + '"/>' +
+      '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" style="stroke:' + (color || 'var(--brand)') + ';transition:stroke-dashoffset 1s cubic-bezier(.2,.9,.25,1)" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + C + '" stroke-dashoffset="' + off + '"/></svg>';
   }
-
   function taskCard(t, k, idx, opts) {
     opts = opts || {};
     var done = isDone(t, k), tm = timeOn(t, k), late = isOverdue(t);
     var nowCls = '';
     if (!done && tm && k === today()) { var p = tm.split(':'), due = new Date(); due.setHours(+p[0], +p[1]); var diff = due - Date.now(); if (diff < 30 * 60000 && diff > -60 * 60000) nowCls = ' now'; }
     var tags = '';
-    if (late) tags += '<span class="tag late">⏳ من ' + dayLabel(t.date) + '</span>';
-    if (tm) tags += '<span class="tag time">🕐 ' + fmtTime(tm) + '</span>';
-    if (t.repeat !== 'none') tags += '<span class="tag rep">🔁 ' + { daily: 'كل يوم', weekly: 'كل أسبوع', monthly: 'كل شهر' }[t.repeat] + '</span>';
-    if (t.isBig && t.date && !done) { var left = diffDays(t.date, today()); tags += '<span class="tag big">🏔️ ' + (left > 0 ? 'فاضل ' + ar(left) + ' يوم' : left === 0 ? 'النهارده آخر يوم!' : 'عدى الميعاد') + '</span>'; }
+    if (late) tags += '<span class="tag late">متأخرة من ' + dayLabel(t.date) + '</span>';
+    if (tm) tags += '<span class="tag time">' + fmtTime(tm) + '</span>';
+    if (t.repeat !== 'none') tags += '<span class="tag rep">' + { daily: 'كل يوم', weekly: 'كل أسبوع', monthly: 'كل شهر' }[t.repeat] + '</span>';
+    if (t.isBig && t.date && !done) { var left = diffDays(t.date, today()); tags += '<span class="tag big">' + (left > 0 ? 'فاضل ' + ar(left) + ' يوم' : left === 0 ? 'النهارده آخر يوم!' : 'عدى الميعاد') + '</span>'; }
     if (t.snoozes >= 2 && !done) tags += '<span class="tag">😴 ×' + ar(t.snoozes) + '</span>';
     var stepsBar = '';
     if (t.steps && t.steps.length) {
@@ -328,7 +327,7 @@
       '<div class="under"><span class="l" style="position:absolute;left:22px">✓ خلصت</span><span class="r" style="position:absolute;right:22px">أجّل ⏰</span></div>' +
       '<div class="card"><div class="emo">' + esc(t.emoji) + '</div><div class="body"><div class="ttl">' + esc(t.title) + '</div>' +
       (tags ? '<div class="meta">' + tags + '</div>' : '') + stepsBar + '</div>' +
-      '<button class="chk" data-act="check" aria-label="خلصت"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D0A1C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div></div>';
+      '<button class="chk" data-act="check" aria-label="خلصت"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div></div>';
   }
 
   function renderToday() {
@@ -350,11 +349,11 @@
     var h = '';
     h += '<div class="top"><div class="hello"><h1>' + esc(greet()) + '</h1><div class="date">' + longDate(new Date()) + '</div></div>' +
       '<div class="chip-streak' + (st ? '' : ' cold') + '"><span class="fire">🔥</span>' + ar(st) + '</div>' +
-      '<button class="lvl-av" data-act="go-me">' + ringSVG(48, 4, li.pct, 'lv1') + '<div class="face">' + li.face + '</div><div class="n">' + ar(li.n) + '</div></button></div>';
+      '<button class="lvl-av" data-act="go-me">' + ringSVG(44, 4, li.pct, 'lv1', 'var(--gold)') + '<div class="face">' + li.face + '</div><div class="n">' + ar(li.n) + '</div></button></div>';
 
     h += '<div class="coach"><div class="who">' + COACHES[S.profile.coach].face + '</div><div class="bubble" data-act="coach">' + esc(coachLine) + '<small>' + COACHES[S.profile.coach].name + ' • دوس عشان يقول حاجة تانية</small></div></div>';
 
-    h += '<div class="daycard"><div class="ring">' + ringSVG(84, 9, pct, 'rg1') + '<div class="v"><div>' + ar(Math.round(pct * 100)) + '٪<small>وعدك</small></div></div></div>' +
+    h += '<div class="daycard"><div class="ring">' + ringSVG(80, 9, pct, 'rg1', pct >= 1 ? 'var(--green)' : null) + '<div class="v"><div>' + ar(Math.round(pct * 100)) + '٪<small>وعدك</small></div></div></div>' +
       '<div class="txt"><b>' + (all.length ? 'خلّصت ' + ar(doneN) + ' من ' + ar(all.length) : 'يوم جديد ✨') + '</b>' +
       '<p>' + (isToday ? 'المستوى ' + ar(li.n) + ' • ' + li.title + ' ' + li.face : dayLabel(k)) + '</p>' +
       '<div class="xpbar"><i style="width:' + Math.round(li.pct * 100) + '%"></i></div><div class="xpline"><span>' + ar(S.stats.xp) + ' XP</span><span>' + ar(li.next) + '</span></div></div></div>';
@@ -371,25 +370,25 @@
     if (isToday) h += nudgesHTML();
 
     if (!all.length) {
-      h += '<div class="empty"><div class="big">🎙️</div><b>' + (isToday ? 'يومك لسه فاضي' : 'مفيش حاجة ' + dayLabel(k)) + '</b>دوس على المايك اللي تحت وقول اللي في دماغك<br><span class="ex">"فكرني بكرة الساعة ٣ عندي ميعاد، وأكلم ماما بالليل"</span></div>';
+      h += '<div class="empty"><div class="big">🎙️</div><b>' + (isToday ? 'يومك لسه فاضي' : 'مفيش حاجة ' + dayLabel(k)) + '</b>دوس المايك اللي تحت وقول اللي وراك<br><span class="ex">"فكرني بكرة الساعة ٣ عندي ميعاد، وأكلم ماما بالليل"</span></div>';
     }
     var idx = 0;
     var odP = od.filter(function (t) { return !isDone(t, k); });
     if (odP.length) {
-      h += '<div class="sec"><h3>⏳ متأخرة <span class="cnt">' + ar(odP.length) + '</span></h3><button data-act="kill-all">أجّلهم لبكرة</button></div><div class="list">';
+      h += '<div class="sec"><h3>متأخرة <span class="cnt">' + ar(odP.length) + '</span></h3><button data-act="kill-all">أجّلهم لبكرة</button></div><div class="list">';
       odP.forEach(function (t) { h += taskCard(t, k, idx++); }); h += '</div>';
     }
     var timed = list.filter(function (t) { return timeOn(t, k) && !isDone(t, k); });
     var anytime = list.filter(function (t) { return !timeOn(t, k) && !isDone(t, k); });
-    if (timed.length) { h += '<div class="sec"><h3>🕐 بالمواعيد <span class="cnt">' + ar(timed.length) + '</span></h3></div><div class="list">'; timed.forEach(function (t) { h += taskCard(t, k, idx++); }); h += '</div>'; }
-    if (anytime.length) { h += '<div class="sec"><h3>✨ في أي وقت <span class="cnt">' + ar(anytime.length) + '</span></h3></div><div class="list">'; anytime.forEach(function (t) { h += taskCard(t, k, idx++); }); h += '</div>'; }
+    if (timed.length) { h += '<div class="sec"><h3>بالمواعيد <span class="cnt">' + ar(timed.length) + '</span></h3></div><div class="list">'; timed.forEach(function (t) { h += taskCard(t, k, idx++); }); h += '</div>'; }
+    if (anytime.length) { h += '<div class="sec"><h3>في أي وقت <span class="cnt">' + ar(anytime.length) + '</span></h3></div><div class="list">'; anytime.forEach(function (t) { h += taskCard(t, k, idx++); }); h += '</div>'; }
     var dn = all.filter(function (t) { return isDone(t, k); });
     if (dn.length) {
-      h += '<div class="sec"><h3>✅ خلصتهم <span class="cnt">' + ar(dn.length) + '</span></h3><button data-act="toggle-done">' + (showDone ? 'اخفي' : 'اعرض') + '</button></div>';
+      h += '<div class="sec"><h3>خلصتهم <span class="cnt">' + ar(dn.length) + '</span></h3><button data-act="toggle-done">' + (showDone ? 'اخفي' : 'اعرض') + '</button></div>';
       if (showDone) { h += '<div class="list">'; dn.forEach(function (t) { h += taskCard(t, k, idx++); }); h += '</div>'; }
     }
     if (isIOS && !isStandalone && !S.profile.hideInstall) {
-      h += '<div class="nudge" style="margin-top:18px"><div class="e">📲</div><div class="t">ضيف فكرني للشاشة الرئيسية عشان يبقى زي الأبلكيشن وتوصلك الإشعارات</div><button data-act="install">إزاي؟</button></div>';
+      h += '<div class="nudge" style="margin-top:18px"><div class="e">📲</div><div class="t">ضيف فكرني للشاشة الرئيسية عشان يفتح زي أي أبلكيشن وتوصلك الإشعارات</div><button class="chunky" data-act="install">إزاي؟</button></div>';
     }
     el.innerHTML = h;
     bindSwipes(el);
@@ -399,17 +398,17 @@
   function nudgesHTML() {
     var h = '', t0 = today(), md = t0.slice(5);
     S.people.forEach(function (p) {
-      if (p.birthday && p.birthday === md) h += '<div class="nudge"><div class="e">🎂</div><div class="t">النهارده عيد ميلاد <b>' + esc(p.name) + '</b>! متنساش تكلمه 🎉</div><button data-act="called" data-id="' + p.id + '">كلمته ✓</button></div>';
+      if (p.birthday && p.birthday === md) h += '<div class="nudge"><div class="e">🎂</div><div class="t">النهارده عيد ميلاد <b>' + esc(p.name) + '</b>! متنساش تكلمه 🎉</div><button class="chunky" data-act="called" data-id="' + p.id + '">كلمته ✓</button></div>';
     });
     var due = S.people.map(function (p) { return { p: p, r: personRatio(p) }; }).filter(function (x) { return x.r >= 1; }).sort(function (a, b) { return b.r - a.r; }).slice(0, 2);
     due.forEach(function (x) {
       var ds = x.p.last ? Math.floor((Date.now() - x.p.last) / 86400000) : null;
-      h += '<div class="nudge"><div class="e">' + esc(x.p.emoji) + '</div><div class="t">' + (ds != null ? 'بقالك <b>' + ar(ds) + ' يوم</b> مكلمتش ' : 'لسه مكلمتش ') + '<b>' + esc(x.p.name) + '</b> ' + (x.p.emoji === '❤️' ? '' : '❤️') + '</div><button data-act="called" data-id="' + x.p.id + '">كلمته ✓</button></div>';
+      h += '<div class="nudge"><div class="e">' + esc(x.p.emoji) + '</div><div class="t">' + (ds != null ? 'بقالك <b>' + ar(ds) + ' يوم</b> مكلمتش ' : 'لسه مكلمتش ') + '<b>' + esc(x.p.name) + '</b> ' + (x.p.emoji === '❤️' ? '' : '❤️') + '</div><button class="chunky" data-act="called" data-id="' + x.p.id + '">كلمته ✓</button></div>';
     });
     var big = S.tasks.filter(function (t) { return t.isBig && !t.doneAt && t.date && t.date >= t0; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0];
     if (big) {
       var left = diffDays(big.date, t0), cs = currentStep(big);
-      h += '<div class="nudge"><div class="e">🏔️</div><div class="t">' + (left > 0 ? 'فاضل <b>' + ar(left) + ' يوم</b> على ' : 'النهارده آخر يوم لـ') + '<b>' + esc(big.title) + '</b>' + (cs ? '<br><small style="color:var(--mute)">الخطوة الجاية: ' + esc(cs.t) + '</small>' : '') + '</div><button data-act="focus" data-id="' + big.id + '">ابدأ ٥ د</button></div>';
+      h += '<div class="nudge"><div class="e">🏔️</div><div class="t">' + (left > 0 ? 'فاضل <b>' + ar(left) + ' يوم</b> على ' : 'النهارده آخر يوم لـ') + '<b>' + esc(big.title) + '</b>' + (cs ? '<br><small style="color:var(--mute)">الخطوة الجاية: ' + esc(cs.t) + '</small>' : '') + '</div><button class="chunky" data-act="focus" data-id="' + big.id + '">ابدأ ٥ د</button></div>';
     }
     return h;
   }
@@ -430,9 +429,9 @@
   function renderGoals() {
     var el = $('#v-goals'), h = '';
     var hit = S.goals.filter(function (g) { return gCount(g) >= g.target; }).length;
-    h += '<div class="top"><div class="hello"><h1>أهدافي 🎯</h1><div class="date">' + (S.goals.length ? 'حققت ' + ar(hit) + ' من ' + ar(S.goals.length) + ' النهارده' : 'العادات اللي عايز تبنيها') + '</div></div><button class="chip-streak" data-act="add-goal" style="background:var(--grad);border:0">＋ هدف</button></div>';
+    h += '<div class="top"><div class="hello"><h1>أهدافي</h1><div class="date">' + (S.goals.length ? 'حققت ' + ar(hit) + ' من ' + ar(S.goals.length) + ' النهارده' : 'العادات اللي عايز تبنيها') + '</div></div><button class="chip-add chunky" data-act="add-goal">＋ هدف</button></div>';
     if (!S.goals.length) {
-      h += '<div class="empty"><div class="big">🎯</div><b>مفيش أهداف لسه</b>اختار هدف تبدأ بيه — كل مرة تعمله دوس ＋ وخد XP</div><div class="sec"><h3>اختار بسرعة</h3></div>' + goalTplHTML();
+      h += '<div class="empty"><div class="big">🎯</div><b>مفيش أهداف لسه</b>اختار هدف تبدأ بيه، كل مرة تعمله دوس ＋ وخد XP</div><div class="sec"><h3>اختار بسرعة</h3></div>' + goalTplHTML();
     } else {
       h += '<div class="list" style="margin-top:6px">';
       S.goals.forEach(function (g, i) {
@@ -441,13 +440,13 @@
         var week = '';
         if (g.period === 'day') {
           week = '<div style="display:flex;gap:4px;margin-top:10px;align-items:flex-end;height:22px">';
-          for (var d = 6; d >= 0; d--) { var kk = dk(addDays(new Date(), -d)), v = Math.min(1, (g.log[kk] || 0) / g.target); week += '<i style="flex:1;border-radius:4px;height:' + Math.max(4, v * 22) + 'px;background:' + (v >= 1 ? 'var(--mint)' : v > 0 ? 'var(--a1)' : 'rgba(255,255,255,.08)') + '"></i>'; }
+          for (var d = 6; d >= 0; d--) { var kk = dk(addDays(new Date(), -d)), v = Math.min(1, (g.log[kk] || 0) / g.target); week += '<i style="flex:1;border-radius:4px;height:' + Math.max(4, v * 22) + 'px;background:' + (v >= 1 ? 'var(--green)' : v > 0 ? 'var(--brand)' : 'var(--track)') + '"></i>'; }
           week += '</div>';
         }
         h += '<div class="goal' + (comp ? ' complete' : '') + '" data-gid="' + g.id + '" style="animation:enter .5s ' + (i * 60) + 'ms both cubic-bezier(.2,.9,.25,1.15)">' +
-          '<div class="ring">' + ringSVG(62, 6, pct, 'g' + i, comp ? '#33E0A1' : null, comp ? '#33E0A1' : null) + '<div class="v">' + esc(g.emoji) + '</div></div>' +
+          '<div class="ring">' + ringSVG(58, 6, pct, 'g' + i, comp ? 'var(--green)' : null) + '<div class="v">' + esc(g.emoji) + '</div></div>' +
           '<div class="gl" data-act="edit-goal" data-id="' + g.id + '"><h4>' + esc(g.title) + '</h4><p>' + ar(c) + ' / ' + ar(g.target) + ' ' + esc(g.unit || '') + ' • ' + (g.period === 'week' ? 'الأسبوع ده' : 'النهارده') + (comp ? ' • تمام ✓' : '') + '</p>' + (dots ? '<div class="dots">' + dots + '</div>' : '') + week + '</div>' +
-          '<button class="plus" data-act="goal-plus" data-id="' + g.id + '">' + (comp ? '✓' : '＋') + '</button></div>';
+          '<button class="plus chunky" data-act="goal-plus" data-id="' + g.id + '">' + (comp ? '✓' : '＋') + '</button></div>';
       });
       h += '</div>';
     }
@@ -480,7 +479,7 @@
   function personRatio(p) { if (!p.last) return (Date.now() - p.created) / 86400000 >= 1 ? 1 : 0.5; return ((Date.now() - p.last) / 86400000) / p.every; }
   function renderPeople() {
     var el = $('#v-people'), h = '';
-    h += '<div class="top"><div class="hello"><h1>ناسي ❤️</h1><div class="date">الناس اللي تهمك… متتوهش عنهم</div></div><button class="chip-streak" data-act="add-person" style="background:var(--grad);border:0">＋ حد</button></div>';
+    h += '<div class="top"><div class="hello"><h1>ناسي</h1><div class="date">الناس اللي تهمك، متتوهش عنهم</div></div><button class="chip-add chunky" data-act="add-person">＋ حد</button></div>';
     if (!S.people.length) {
       h += '<div class="empty"><div class="big">❤️</div><b>ضيف الناس اللي عايز تفضل قريب منهم</b>وفكرني هيقولك لما تطوّل عليهم</div><div class="sec"><h3>اختار بسرعة</h3></div><div class="tpl-grid">' +
         PEOPLE_TPL.map(function (p, i) { return '<button class="tpl" data-act="person-tpl" data-i="' + i + '"><div class="e">' + p.e + '</div><b>' + p.n + '</b><small>' + (p.custom ? 'أي حد' : everyLabel(p.every)) + '</small></button>'; }).join('') + '</div>';
@@ -488,7 +487,7 @@
       var arr = S.people.slice().sort(function (a, b) { return personRatio(b) - personRatio(a); });
       h += '<div class="list" style="margin-top:6px">';
       arr.forEach(function (p, i) {
-        var r = personRatio(p), col = r >= 1 ? 'var(--red)' : r >= .7 ? 'var(--gold)' : 'var(--mint)';
+        var r = personRatio(p), col = r >= 1 ? 'var(--red)' : r >= .7 ? 'var(--gold)' : 'var(--green)';
         var ds = p.last ? Math.floor((Date.now() - p.last) / 86400000) : null;
         var txt = ds == null ? 'لسه مكلمتوش من ساعة ما ضفته' : ds === 0 ? 'كلمته النهارده ✓' : ds === 1 ? 'كلمته امبارح' : 'كلمته من ' + ar(ds) + ' أيام';
         var bd = '';
@@ -521,12 +520,12 @@
   function renderMe() {
     var el = $('#v-me'), li = lvlInfo(S.stats.xp), st = streak(), h = '';
     var snzWeek = 0; for (var i = 0; i < 7; i++) snzWeek += S.stats.snoozes[dk(addDays(new Date(), -i))] || 0;
-    h += '<div class="hero"><div class="bigav">' + ringSVG(110, 8, li.pct, 'me1') + '<div class="face">' + li.face + '</div></div><h2>' + esc(S.profile.name || 'أنا') + '</h2><div class="title">المستوى ' + ar(li.n) + ' • ' + li.title + '</div>' +
+    h += '<div class="hero"><div class="bigav">' + ringSVG(104, 8, li.pct, 'me1', 'var(--gold)') + '<div class="face">' + li.face + '</div></div><h2>' + esc(S.profile.name || 'أنا') + '</h2><div class="title">المستوى ' + ar(li.n) + ' • ' + li.title + '</div>' +
       '<div class="xpbar" style="margin-top:14px"><i style="width:' + Math.round(li.pct * 100) + '%"></i></div><div class="xpline"><span>' + ar(S.stats.xp) + ' XP</span><span>فاضل ' + ar(li.next - S.stats.xp) + ' للمستوى الجاي</span></div></div>';
     h += '<div class="stats"><div class="stat"><div class="n">🔥 ' + ar(st) + '</div><div class="l">ستريك (أحسن: ' + ar(S.stats.best) + ')</div></div><div class="stat"><div class="n">✅ ' + ar(S.stats.total) + '</div><div class="l">حاجة خلصت</div></div>' +
       '<div class="stat"><div class="n">🗡️ ' + ar(S.stats.killed) + '</div><div class="l">متأخرة قتلتها</div></div><div class="stat"><div class="n">😴 ' + ar(snzWeek) + '</div><div class="l">تأجيلات الأسبوع ده</div></div></div>';
     // heatmap 12 weeks
-    h += '<div class="sec"><h3>🗓️ آخر ١٢ أسبوع</h3></div><div class="heat">';
+    h += '<div class="sec"><h3>آخر ١٢ أسبوع</h3></div><div class="heat">';
     var start = addDays(new Date(), -83); start = addDays(start, -start.getDay());
     for (var d = 0; d < 84 + new Date().getDay() + 1; d++) {
       var day = addDays(start, d); if (day > new Date()) break;
@@ -534,10 +533,10 @@
       h += '<i class="' + l + '" title="' + dk(day) + '"></i>';
     }
     h += '</div>';
-    h += '<div class="sec"><h3>🏅 الأوسمة <span class="cnt">' + ar(S.stats.badges.length) + '/' + ar(BADGES.length) + '</span></h3></div><div class="badges">' +
+    h += '<div class="sec"><h3>الأوسمة <span class="cnt">' + ar(S.stats.badges.length) + '/' + ar(BADGES.length) + '</span></h3></div><div class="badges">' +
       BADGES.map(function (b) { var got = S.stats.badges.indexOf(b.id) >= 0; return '<div class="badge ' + (got ? 'got' : 'locked') + '"><div class="e">' + b.e + '</div><b>' + b.t + '</b><small>' + b.d + '</small></div>'; }).join('') + '</div>';
-    h += '<div class="sec"><h3>🧠 المدرب بتاعك</h3></div><div class="seg">' + Object.keys(COACHES).map(function (k) { var c = COACHES[k]; return '<button class="' + (S.profile.coach === k ? 'on' : '') + '" data-act="coach-set" data-k="' + k + '"><span class="e">' + c.face + '</span>' + c.name + '</button>'; }).join('') + '</div>';
-    h += '<div class="sec"><h3>⚙️ الإعدادات</h3></div>' +
+    h += '<div class="sec"><h3>المدرب بتاعك</h3></div><div class="seg">' + Object.keys(COACHES).map(function (k) { var c = COACHES[k]; return '<button class="' + (S.profile.coach === k ? 'on' : '') + '" data-act="coach-set" data-k="' + k + '"><span class="e">' + c.face + '</span>' + c.name + '</button>'; }).join('') + '</div>';
+    h += '<div class="sec"><h3>الإعدادات</h3></div>' +
       '<button class="rowbtn" data-act="share"><span class="e">📣</span><span>شارك إنجازك مع صحابك</span><small>تحدّاهم</small></button>' +
       '<button class="rowbtn" data-act="notif"><span class="e">🔔</span><span>الإشعارات</span><small>' + notifLabel() + '</small></button>' +
       '<button class="rowbtn" data-act="sound"><span class="e">' + (S.profile.sound ? '🔊' : '🔇') + '</span><span>الأصوات</span><small>' + (S.profile.sound ? 'شغالة' : 'مقفولة') + '</small></button>' +
@@ -615,7 +614,7 @@
             b.innerHTML = '<span class="dotsl"><i></i><i></i><i></i></span>';
             aiBreakdown(t).then(function (r) {
               t.steps = r ? r.steps : localBreakdown(t); t.isBig = true; save();
-              taskSheet(t, k); render(); toast('🔨', r && r.reply ? esc(r.reply) : 'قسمتها لخطوات صغيرة. أول خطوة ٥ دقايق بس — ابدأ دلوقتي 💪');
+              taskSheet(t, k); render(); toast('🔨', r && r.reply ? esc(r.reply) : 'قسمتها لخطوات صغيرة. أول خطوة خمس دقايق بس، ابدأ بيها.');
             });
           }
           if (a === 'snooze') snoozeSheet(t);
@@ -693,7 +692,7 @@
     });
   }
   function installSheet() {
-    openSheet('<h2>📲 خلّي فكرني أبلكيشن على موبايلك</h2><p style="color:var(--mute);line-height:1.7;margin-bottom:6px">من غير App Store — ٣ خطوات بس:</p><div class="ios-steps">' +
+    openSheet('<h2>📲 خلّي فكرني أبلكيشن على موبايلك</h2><p style="color:var(--mute);line-height:1.7;margin-bottom:6px">من غير App Store، ٣ خطوات بس:</p><div class="ios-steps">' +
       '<div><b>١</b><span>افتح اللينك ده من <b>Safari</b></span></div>' +
       '<div><b>٢</b><span>دوس على زرار المشاركة <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4DA3FF" stroke-width="2" style="vertical-align:-3px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v8h14v-8"/></svg> تحت</span></div>' +
       '<div><b>٣</b><span>اختار <b>Add to Home Screen</b> ثم <b>Add</b></span></div></div>' +
@@ -786,7 +785,7 @@
   // ================= voice =================
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var rec = null, recOn = false, finalText = '', interim = '', energy = 0, orbMode = 'idle', parsed = [];
-  var HINTS = ['قول مثلاً: <b>"فكرني بكرة الساعة ٣ عندي ميعاد دكتور"</b>', '<b>"فكرني أكلم ماما بالليل"</b>', '<b>"فكرني آخد الفيتامين كل يوم الصبح"</b>', '<b>"لازم أخلص التقرير قبل الخميس"</b>', 'تقدر تقول كذا حاجة ورا بعض 😉', '<b>"فكرني أصلّح كمبيوتر الصيدلية بكرة، وأوصّل أوردر الساعة ٥"</b>'];
+  var HINTS = ['جرّب: <b>"فكرني بكرة الساعة ٣ عندي ميعاد دكتور"</b>', '<b>"فكرني أكلم ماما بالليل"</b>', '<b>"فكرني آخد الفيتامين كل يوم الصبح"</b>', '<b>"لازم أخلص التقرير قبل الخميس"</b>', 'تقدر تقول كذا حاجة ورا بعض.', '<b>"فكرني أصلّح كمبيوتر الصيدلية بكرة، وأوصّل أوردر الساعة ٥"</b>'];
   var hintI = 0, hintTimer = null;
   function voiceUI(state) {
     // state: listen | type | think | review
@@ -796,7 +795,7 @@
     $('#vThink').classList.toggle('show', state === 'think');
     $('#vReview').classList.toggle('show', state === 'review');
     $('#vActs').classList.toggle('show', state === 'review');
-    $('#vCtrls').classList.toggle('hidden', state === 'review' || state === 'think');
+    $('#vCtrls').classList.toggle('hidden', state === 'review' || state === 'think' || state === 'type');
     $('#vType').classList.toggle('show', state === 'type');
     $('#vState').textContent = state === 'listen' && recOn ? '● بسمعك…' : state === 'think' ? '' : '';
     orbMode = state === 'think' ? 'think' : recOn ? 'listen' : 'idle';
@@ -825,7 +824,7 @@
         energy = 1; showLive();
       };
       rec.onerror = function (ev) {
-        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { recOn = false; voiceUI('type'); $('#vHint').innerHTML = 'المايك مقفول — اكتب أو استخدم <b>🎙 الكيبورد</b>'; }
+        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { recOn = false; voiceUI('type'); $('#vHint').innerHTML = 'المايك مقفول، اكتب أو استخدم <b>🎙 الكيبورد</b>'; }
       };
       rec.onend = function () { if (recOn) { try { rec.start(); } catch (_) { recOn = false; voiceUI('listen'); } } };
       rec.start(); recOn = true; buzz(10); sfx('rec'); voiceUI('listen');
@@ -859,10 +858,10 @@
     parsed.forEach(function (t, i) {
       h += '<div class="rcard" style="animation-delay:' + (i * 110 + 80) + 'ms" data-i="' + i + '"><div class="emo">' + esc(t.emoji) + '</div><div class="b">' +
         '<input class="t" value="' + esc(t.title) + '" data-f="title">' +
-        '<div class="meta"><label class="tag time">📅 <span>' + (t.date ? dayLabel(t.date) : 'في أي وقت') + '</span><input type="date" data-f="date" value="' + (t.date || '') + '"></label>' +
-        '<label class="tag time">🕐 <span>' + (t.time ? fmtTime(t.time) : 'من غير ساعة') + '</span><input type="time" data-f="time" value="' + (t.time || '') + '"></label>' +
-        '<button class="tag rep" data-f="repeat">🔁 ' + { none: 'مرة واحدة', daily: 'كل يوم', weekly: 'كل أسبوع', monthly: 'كل شهر' }[t.repeat] + '</button>' +
-        (t.isBig ? '<span class="tag big">🏔️ ' + ar(t.steps.length) + ' خطوات</span>' : '') + '</div></div><button class="del" data-f="del">✕</button></div>';
+        '<div class="meta"><label class="tag time"><span>' + (t.date ? dayLabel(t.date) : 'في أي وقت') + '</span><input type="date" data-f="date" value="' + (t.date || '') + '"></label>' +
+        '<label class="tag time"><span>' + (t.time ? fmtTime(t.time) : 'من غير ساعة') + '</span><input type="time" data-f="time" value="' + (t.time || '') + '"></label>' +
+        '<button class="tag rep" data-f="repeat">' + { none: 'مرة واحدة', daily: 'كل يوم', weekly: 'كل أسبوع', monthly: 'كل شهر' }[t.repeat] + '</button>' +
+        (t.isBig ? '<span class="tag big">' + ar(t.steps.length) + ' خطوات</span>' : '') + '</div></div><button class="del" data-f="del">✕</button></div>';
     });
     if (source === 'local' && aiOk === false) h += '<div style="color:var(--dim);font-size:11.5px;text-align:center">⚡ اتفهمت على موبايلك</div>';
     $('#vReview').innerHTML = h; voiceUI('review');
@@ -872,7 +871,7 @@
       $('input.t', card).oninput = function () { t.title = this.value; };
       $('[data-f=date]', card).onchange = function () { t.date = this.value || null; this.previousElementSibling.textContent = t.date ? dayLabel(t.date) : 'في أي وقت'; };
       $('[data-f=time]', card).onchange = function () { t.time = this.value || null; this.previousElementSibling.textContent = t.time ? fmtTime(t.time) : 'من غير ساعة'; if (t.time && !t.date) t.date = today(); };
-      $('[data-f=repeat]', card).onclick = function () { var o = ['none', 'daily', 'weekly', 'monthly']; t.repeat = o[(o.indexOf(t.repeat) + 1) % 4]; if (t.repeat !== 'none' && !t.date) t.date = today(); this.textContent = '🔁 ' + { none: 'مرة واحدة', daily: 'كل يوم', weekly: 'كل أسبوع', monthly: 'كل شهر' }[t.repeat]; };
+      $('[data-f=repeat]', card).onclick = function () { var o = ['none', 'daily', 'weekly', 'monthly']; t.repeat = o[(o.indexOf(t.repeat) + 1) % 4]; if (t.repeat !== 'none' && !t.date) t.date = today(); this.textContent = { none: 'مرة واحدة', daily: 'كل يوم', weekly: 'كل أسبوع', monthly: 'كل شهر' }[t.repeat]; };
       $('[data-f=del]', card).onclick = function () { card.style.transition = '.3s'; card.style.opacity = 0; card.style.transform = 'translateX(-40px)'; t._del = true; setTimeout(function () { card.remove(); }, 300); };
     });
   }
@@ -888,7 +887,7 @@
     selDay = first.date && first.date !== today() && !add.some(function (t) { return occursOn(t, today()); }) ? first.date : today();
     renderToday(); scheduleNotifs();
     burst(innerWidth / 2, innerHeight - 90, 40); sfx('done');
-    toast('🧠', 'اتسجلوا ' + ar(add.length) + (selDay !== today() ? ' — وريتك ' + dayLabel(selDay) : ''));
+    toast('🧠', 'اتسجلوا ' + ar(add.length) + (selDay !== today() ? '، وريتك ' + dayLabel(selDay) : ''));
   };
   $('#vRedo').onclick = function () { parsed = []; finalText = ''; interim = ''; $('#vLive').innerHTML = ''; $('#vText').value = ''; if (SR) startRec(); else voiceUI('type'); };
   $('#fab').onclick = openVoice;
@@ -904,38 +903,29 @@
   var orbRAF = null, orbT = 0, ctxO = $('#orb').getContext('2d');
   function startOrb() { if (!orbRAF) orbRAF = requestAnimationFrame(drawOrb); }
   function stopOrb() { cancelAnimationFrame(orbRAF); orbRAF = null; }
+  var orbCol = null;
   function drawOrb() {
     var c = ctxO, W = 660, cx = W / 2, cy = W / 2;
-    orbT += orbMode === 'think' ? 0.06 : 0.018;
-    var target = orbMode === 'listen' ? 0.25 : orbMode === 'think' ? 0.35 : 0.08;
-    energy = Math.max(target, energy * 0.94);
+    if (!orbCol) { var cs = getComputedStyle(document.documentElement); orbCol = { b: cs.getPropertyValue('--brand').trim() || '#E8590C', soft: cs.getPropertyValue('--brand-soft').trim() || '#FDE8DA' }; }
+    orbT += orbMode === 'think' ? 0.05 : 0.02;
+    var target = orbMode === 'listen' ? 0.2 : orbMode === 'think' ? 0.3 : 0.05;
+    energy = Math.max(target, energy * 0.93);
     c.clearRect(0, 0, W, W);
-    var layers = [
-      { col: ['rgba(255,138,61,.9)', 'rgba(255,61,139,.0)'], r: 150, amp: 26, sp: 1, ph: 0 },
-      { col: ['rgba(255,61,139,.85)', 'rgba(139,92,255,0)'], r: 138, amp: 30, sp: -1.3, ph: 2 },
-      { col: ['rgba(139,92,255,.8)', 'rgba(77,163,255,0)'], r: 124, amp: 34, sp: 1.7, ph: 4 }
-    ];
-    c.globalCompositeOperation = 'lighter';
-    layers.forEach(function (L) {
-      var R = L.r * (1 + energy * 0.35);
-      var g = c.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.25);
-      g.addColorStop(0, L.col[0]); g.addColorStop(1, L.col[1]);
-      c.fillStyle = g; c.beginPath();
-      for (var a = 0; a <= Math.PI * 2 + 0.01; a += Math.PI / 60) {
-        var n = Math.sin(a * 3 + orbT * L.sp * 2 + L.ph) * 0.5 + Math.sin(a * 5 - orbT * L.sp * 3 + L.ph) * 0.3 + Math.sin(a * 2 + orbT * 1.3) * 0.2;
-        var rr = R + n * L.amp * (0.4 + energy * 1.6);
-        var x = cx + Math.cos(a + (orbMode === 'think' ? orbT : 0)) * rr, y = cy + Math.sin(a + (orbMode === 'think' ? orbT : 0)) * rr;
-        if (a === 0) c.moveTo(x, y); else c.lineTo(x, y);
-      }
-      c.closePath(); c.fill();
-    });
-    c.globalCompositeOperation = 'source-over';
-    // core
-    var core = c.createRadialGradient(cx, cy - 20, 10, cx, cy, 110 * (1 + energy * 0.2));
-    core.addColorStop(0, 'rgba(255,255,255,.95)'); core.addColorStop(0.35, 'rgba(255,220,240,.55)'); core.addColorStop(1, 'rgba(255,255,255,0)');
-    c.fillStyle = core; c.beginPath(); c.arc(cx, cy, 120, 0, Math.PI * 2); c.fill();
-    if (orbMode === 'listen') { // pulsing rings
-      for (var i = 0; i < 3; i++) { var p = ((orbT * 0.8 + i / 3) % 1); c.strokeStyle = 'rgba(255,255,255,' + (0.25 * (1 - p)) + ')'; c.lineWidth = 3; c.beginPath(); c.arc(cx, cy, 160 + p * 150, 0, Math.PI * 2); c.stroke(); }
+    var base = 150 + Math.sin(orbT * 2) * 6;
+    c.fillStyle = orbCol.soft; c.beginPath(); c.arc(cx, cy, base * (1.25 + energy * 0.5), 0, Math.PI * 2); c.fill();
+    if (orbMode === 'listen') {
+      for (var i = 0; i < 2; i++) { var p = ((orbT * 0.6 + i / 2) % 1); c.globalAlpha = 0.5 * (1 - p); c.strokeStyle = orbCol.b; c.lineWidth = 5; c.beginPath(); c.arc(cx, cy, base + p * 150, 0, Math.PI * 2); c.stroke(); }
+      c.globalAlpha = 1;
+    }
+    c.fillStyle = orbCol.b; c.beginPath(); c.arc(cx, cy, base * (1 + energy * 0.25), 0, Math.PI * 2); c.fill();
+    if (orbMode === 'think') {
+      c.strokeStyle = '#fff'; c.lineWidth = 12; c.lineCap = 'round'; c.beginPath(); c.arc(cx, cy, base * 0.55, orbT * 3, orbT * 3 + 1.6); c.stroke();
+    } else {
+      c.save(); c.translate(cx, cy); c.scale(7, 7); c.translate(-12, -12);
+      c.fillStyle = '#fff'; c.strokeStyle = '#fff'; c.lineWidth = 2.2; c.lineCap = 'round';
+      c.beginPath(); if (c.roundRect) c.roundRect(9, 2.5, 6, 12, 3); else c.rect(9, 2.5, 6, 12); c.fill();
+      c.beginPath(); c.arc(12, 11, 7, 0, Math.PI); c.stroke();
+      c.beginPath(); c.moveTo(12, 18); c.lineTo(12, 21.5); c.stroke(); c.restore();
     }
     orbRAF = requestAnimationFrame(drawOrb);
   }
@@ -945,9 +935,9 @@
   function openFocus(t) {
     fTask = t; fTotal = fLeft = 5 * 60; fPaused = false;
     var el = $('#focus');
-    el.innerHTML = '<div class="fs">🧘 قاعدة الـ٥ دقايق: ابدأ بس، والباقي هييجي لوحده</div><div class="ft">' + esc(t.emoji) + ' ' + esc((currentStep(t) || {}).t || t.title) + '</div>' +
-      '<div class="clock">' + '<svg width="250" height="250" viewBox="0 0 250 250"><defs><linearGradient id="fg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8A3D"/><stop offset="1" stop-color="#8B5CFF"/></linearGradient></defs><circle cx="125" cy="125" r="112" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="12"/><circle id="fArc" cx="125" cy="125" r="112" fill="none" stroke="url(#fg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="703.7" stroke-dashoffset="0"/></svg><div class="v" id="fV">05:00</div></div>' +
-      '<div class="fs" id="fMsg">' + pick(['مش لازم تخلّصها… بس ابدأ 💪', 'ركّز ٥ دقايق بس، الموبايل مستنيك بعدين 😏', 'أصعب حاجة إنك تبدأ — وإنت بدأت خلاص 🔥']) + '</div>' +
+    el.innerHTML = '<div class="fs">قاعدة الخمس دقايق: ابدأ بس، والباقي بييجي لوحده.</div><div class="ft">' + esc(t.emoji) + ' ' + esc((currentStep(t) || {}).t || t.title) + '</div>' +
+      '<div class="clock">' + '<svg width="240" height="240" viewBox="0 0 250 250"><circle cx="125" cy="125" r="112" fill="none" style="stroke:var(--track)" stroke-width="14"/><circle id="fArc" cx="125" cy="125" r="112" fill="none" style="stroke:var(--brand)" stroke-width="14" stroke-linecap="round" stroke-dasharray="703.7" stroke-dashoffset="0"/></svg><div class="v" id="fV">05:00</div></div>' +
+      '<div class="fs" id="fMsg">' + pick(['مش لازم تخلّصها… بس ابدأ 💪', 'ركّز ٥ دقايق بس، الموبايل مستنيك بعدين 😏', 'أصعب حاجة إنك تبدأ، وإنت بدأت خلاص 🔥']) + '</div>' +
       '<div class="fb"><button class="btn" id="fPause">⏸ استنى</button><button class="btn pri" id="fDoneB">خلصتها ✓</button></div><button class="btn ghost" id="fClose" style="max-width:360px;width:100%;flex:none">✕ اقفل</button>';
     el.classList.add('open');
     $('#fPause').onclick = function () { fPaused = !fPaused; this.textContent = fPaused ? '▶ كمّل' : '⏸ استنى'; };
@@ -979,7 +969,7 @@
     Notification.requestPermission().then(function (p) {
       S.profile.notif = p === 'granted'; save(); renderMe();
       if (p === 'granted') { notify('🔔 فكرني شغال', 'هفكّرك بمواعيدك في وقتها 😏'); scheduleNotifs(); }
-      else toast('🔕', 'الإشعارات مقفولة — تقدر تفتحها من إعدادات الموبايل');
+      else toast('🔕', 'الإشعارات مقفولة، تقدر تفتحها من إعدادات الموبايل');
     });
   }
   function notify(title, body, tag) {
@@ -1007,7 +997,7 @@
     if (isDone(t, k)) return;
     t.pinged = t.pinged || {}; t.pinged[k] = 1; save();
     notify(t.emoji + ' ' + t.title, say('ping'), t.id);
-    if (document.visibilityState === 'visible') { toast(t.emoji, '<b>' + esc(t.title) + '</b> — ' + say('ping')); sfx('ping'); buzz([30, 60, 30]); render(); }
+    if (document.visibilityState === 'visible') { toast(t.emoji, '<b>' + esc(t.title) + '</b>، ' + say('ping')); sfx('ping'); buzz([30, 60, 30]); render(); }
   }
   function catchUp() {
     var k = today(), now = new Date(), missed = [];
@@ -1030,7 +1020,7 @@
     var blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'fakkarny-' + t.id + '.ics';
     document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
-    toast('📅', 'افتح الملف واختار "Add" — التقويم هينبهك حتى لو فكرني مقفول');
+    toast('📅', 'افتح الملف واختار Add، والتقويم هينبهك حتى لو فكرني مقفول');
   }
 
   // ================= share / data =================
@@ -1039,7 +1029,7 @@
     var txt = 'أنا في المستوى ' + ar(li.n) + ' (' + li.title + ' ' + li.face + ') على فكرني 🔥\nستريك ' + ar(streak()) + ' يوم وخلّصت ' + ar(S.stats.total) + ' حاجة.\nتقدر تغلبني؟ 😏';
     var url = location.origin + location.pathname;
     if (navigator.share) navigator.share({ title: 'فكرني', text: txt, url: url }).catch(function () { });
-    else if (navigator.clipboard) navigator.clipboard.writeText(txt + '\n' + url).then(function () { toast('📋', 'اتنسخ — ابعته لصحابك'); });
+    else if (navigator.clipboard) navigator.clipboard.writeText(txt + '\n' + url).then(function () { toast('📋', 'اتنسخ، ابعته لصحابك'); });
   }
   function exportData() {
     var blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
@@ -1076,7 +1066,7 @@
   var fx = $('#fx'), fxc = fx.getContext('2d'), parts = [], fxRAF = null, DPR = Math.min(2, window.devicePixelRatio || 1);
   function sizeFx() { fx.width = innerWidth * DPR; fx.height = innerHeight * DPR; fx.style.width = innerWidth + 'px'; fx.style.height = innerHeight + 'px'; }
   sizeFx(); addEventListener('resize', sizeFx);
-  var COLS = ['#FF8A3D', '#FF3D8B', '#8B5CFF', '#33E0A1', '#FFC94D', '#4DA3FF', '#ffffff'];
+  var COLS = ['#E8590C', '#2F9E44', '#E8A100', '#1C7ED6', '#D9363E', '#7048E8'];
   function burst(x, y, n) {
     for (var i = 0; i < n; i++) {
       var a = Math.random() * Math.PI * 2, sp = 3 + Math.random() * (n > 100 ? 11 : 7);
@@ -1123,12 +1113,12 @@
     function show() {
       var h = '<div class="onb"><div class="bg-glow"></div>';
       if (step === 0) {
-        h += '<div class="pg"><div class="logo">فكرني</div><h2>قول… وأنا أفتكر.</h2><p>بدل ما تكتب وتنسى وتأجّل — امسك الموبايل، قول اللي في دماغك، وفكرني يرتبلك يومك ويفضل وراك لحد ما تخلّص.</p>' +
+        h += '<div class="pg"><div class="logo">فكرني</div><h2>قول… وأنا أفتكر.</h2><p>امسك الموبايل وقول اللي وراك. فكرني يرتّبه، ويفكّرك في وقته، ويفضل وراك لحد ما تخلّص.</p>' +
           '<div class="bubbles"><div class="bb me" style="animation-delay:.3s">🎙 فكرني بكرة الساعة ٣ عندي ميعاد دكتور، وأكلم ماما بالليل</div>' +
-          '<div class="bb" style="animation-delay:1.1s">تمام يا باشا 😏<br>🩺 ميعاد الدكتور — بكرة ٣:٠٠ العصر<br>❤️ أكلم ماما — بكرة ٩:٠٠ بالليل</div>' +
-          '<div class="bb" style="animation-delay:1.9s">وكل ما تخلّص حاجة تاخد XP وتطلع مستوى 🔥</div></div></div>' + dots() + '<button class="nextb" id="oN">يلا نبدأ</button>';
+          '<div class="bb" style="animation-delay:1.1s">تمام يا باشا 😏<br>🩺 ميعاد الدكتور، بكرة ٣:٠٠ العصر<br>❤️ أكلم ماما، بكرة ٩:٠٠ بالليل</div>' +
+          '<div class="bb" style="animation-delay:1.9s">وكل حاجة تخلّصها بنقط. اجمع وطلّع مستوى.</div></div></div>' + dots() + '<button class="nextb" id="oN">يلا نبدأ</button>';
       } else if (step === 1) {
-        h += '<div class="pg"><h2>أناديك بإيه؟ 👋</h2><p>عشان المدرب بتاعك يعرف يكلمك (ويقلش عليك 😏)</p><input class="name" id="oName" placeholder="اسمك" value="' + esc(S.profile.name) + '" autocomplete="given-name"></div>' + dots() + '<button class="nextb" id="oN">كمّل</button>';
+        h += '<div class="pg"><h2>أناديك بإيه؟ 👋</h2><p>عشان المدرب يكلمك باسمك.</p><input class="name" id="oName" placeholder="اسمك" value="' + esc(S.profile.name) + '" autocomplete="given-name"></div>' + dots() + '<button class="nextb" id="oN">كمّل</button>';
       } else if (step === 2) {
         h += '<div class="pg"><h2>اختار المدرب بتاعك</h2><p>هو اللي هيكلمك ويفكّرك ويزقّك. تقدر تغيّره بعدين.</p><div class="coach-pick">' +
           Object.keys(COACHES).map(function (k) { var c = COACHES[k]; return '<button class="' + (S.profile.coach === k ? 'on' : '') + '" data-c="' + k + '"><span class="e">' + c.face + '</span><span><b>' + c.name + '</b><small>' + c.desc + '</small></span></button>'; }).join('') +
@@ -1154,9 +1144,9 @@
     function finish() {
       S.onboarded = true;
       if (!S.tasks.length) {
-        var a = newTask({ title: 'اسحبني يمين عشان تخلّصني 👉', emoji: '👋', date: today() });
-        var b = newTask({ title: 'دوس على المايك وقول: فكرني…', emoji: '🎙️', date: today() });
-        var c = newTask({ title: 'اسحبني شمال عشان تأجّلني 👈 (بس متتعودش)', emoji: '😴', date: today() });
+        var a = newTask({ title: 'اسحبني يمين لما تخلّص', emoji: '👋', date: today() });
+        var b = newTask({ title: 'دوس المايك وجرّب تقول: فكرني بكرة…', emoji: '🎙️', date: today() });
+        var c = newTask({ title: 'اسحبني شمال لو عايز تأجّل (بس متتعودش)', emoji: '😴', date: today() });
         S.tasks.push(a, b, c); freshIds[a.id] = freshIds[b.id] = freshIds[c.id] = 1;
       }
       save(); el.innerHTML = ''; render(); burst(innerWidth / 2, innerHeight / 3, 120); sfx('level');
