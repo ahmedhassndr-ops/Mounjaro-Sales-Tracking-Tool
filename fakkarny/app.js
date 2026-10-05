@@ -718,7 +718,7 @@
   }
   function localFeedback(d) {
     var n = d.done.length, m = d.missed.length;
-    var a = n ? 'خلّصت ' + ar(n) + (n === 1 ? ' حاجة' : ' حاجات') + ' النهارده، ودي بداية.' : 'النهارده مخلّصتش حاجة، بس إنك قاعد تراجع ده في حد ذاته خطوة.';
+    var a = n ? 'خلّصت ' + ar(n) + (n === 1 ? ' حاجة' : ' حاجات') + ' النهارده، ودي بداية.' : 'النهارده مخلّصتش حاجة. بس إنك قاعد تراجع يومك، دي لوحدها حاجة.';
     var b = d.snoozes >= 2 ? 'أجّلت ' + ar(d.snoozes) + ' مرات. بكرة ابدأ بأتقل حاجة الصبح قبل ما تفتح الموبايل.' : m ? 'بكرة ابدأ بأول حاجة في الخطة قبل أي حاجة تانية.' : 'كمّل بنفس الشكل بكرة.';
     return a + '\n' + b;
   }
@@ -1461,7 +1461,7 @@
           WHY.map(function (w) { return '<button class="why' + (why[w[0]] ? ' on' : '') + '" data-w="' + w[0] + '"><span class="e">' + w[1] + '</span>' + w[2] + '</button>'; }).join('') +
           '</div></div>' + dots() + '<button class="nextb" id="oN">كمّل</button>' + (only ? '<button class="skip" id="oX">اقفل</button>' : '');
       } else if (step === 4) {
-        h += '<div class="pg"><h2>عايز توصل لإيه؟</h2><p>اكتب أو قول بالكيبورد أهم حاجات عايز تحققها، حتى لو مش مترتبة.</p>' +
+        h += '<div class="pg"><h2>عايز توصل لإيه؟</h2><p>اكتبها، أو دوس مايك الكيبورد وقولها. مش لازم تكون مترتبة.</p>' +
           '<textarea class="wish" id="oWish" rows="4" placeholder="مثلاً: أنزل ٥ كيلو، أخلّص كورس الديزاين، أبطّل أأجل شغل الصيدلية، أكلم أهلي أكتر">' + esc(wish) + '</textarea>' +
           '<div class="seg-mini">' + PERIODS.map(function (p) { return '<button class="' + (period === p[0] ? 'on' : '') + '" data-per="' + p[0] + '">' + p[1] + '</button>'; }).join('') + '</div></div>' +
           dots() + '<button class="nextb" id="oN">جهّزلي خطة</button>';
