@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>فكرني</title>
-<meta name="description" content="قول وأنا أفتكر — نظّم يومك وأهدافك بصوتك">
+<meta name="description" content="قول وأنا أفتكرلك. رتّب يومك وأهدافك بصوتك">
 <meta name="theme-color" content="#F6F2EA" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#15130F" media="(prefers-color-scheme: dark)">
 <link rel="preload" href="fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -135,6 +135,13 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .tag.late{color:var(--red);background:var(--red-soft)}
 .tag.big{color:var(--gold);background:var(--gold-soft)}
 .tag.rep{color:var(--blue);background:var(--blue-soft)}
+.tag.hi{color:#fff;background:var(--red)}
+.task.hi .card{border-inline-start:4px solid var(--red)}
+.task .notes,.rcard .notes{font-size:13px;color:var(--mute);line-height:1.6;margin-top:6px;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rcard .notes{-webkit-line-clamp:6}
+.rcard.upd .t{font-size:16px;font-weight:500}
+button.tag{border:0;cursor:pointer}
+.field textarea{height:auto;min-height:84px;padding:12px 14px;line-height:1.6;resize:vertical}
 .chk{width:30px;height:30px;flex:none;border-radius:50%;border:2px solid var(--line2);display:grid;place-items:center;transition:.2s var(--ease);background:var(--surface)}
 .chk svg{opacity:0;transform:scale(.4);transition:.25s var(--ease);stroke:#fff}
 .task.is-done .chk{background:var(--green);border-color:var(--green)}
@@ -397,10 +404,10 @@ input,textarea{-webkit-user-select:text;user-select:text}
   <canvas id="orb" width="660" height="660"></canvas>
   <div class="state" id="vState"></div>
   <div class="live" id="vLive"></div>
-  <div class="thinking" id="vThink"><div class="dotsl"><i></i><i></i><i></i></div><span>ثانية بفهم…</span></div>
+  <div class="thinking" id="vThink"><div class="dotsl"><i></i><i></i><i></i></div><span id="vThinkT">ثانية بفهم</span></div>
   <div class="review" id="vReview"></div>
   <div class="typebox" id="vType"><textarea id="vText" rows="2" placeholder="اكتب هنا، أو دوس مايك الكيبورد واتكلم"></textarea><button id="vSend" class="chunky" aria-label="ابعت">⬅</button></div>
-  <div class="review-actions" id="vActs"><button class="btn ghost" id="vRedo">قول تاني</button><button class="btn pri" id="vSave">ضيفهم</button></div>
+  <div class="review-actions" id="vActs"><button class="btn ghost" id="vRedo">قول تاني</button><button class="btn pri" id="vSave">احفظ</button></div>
   <div class="ctrls" id="vCtrls">
     <button class="vbtn" id="vKb" aria-label="كتابة">⌨️</button>
     <button class="vbtn main" id="vMic" aria-label="سجل">🎙</button>

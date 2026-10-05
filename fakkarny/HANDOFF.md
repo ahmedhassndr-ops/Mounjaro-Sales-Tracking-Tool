@@ -25,7 +25,8 @@ A voice-first life organizer in Egyptian Arabic. You say "فكرني بكرة ا
 | `index.html` | All CSS + static markup (nav, voice overlay, sheet, focus, toast). |
 | `app.js` | All app logic: state, rendering, gestures, voice, gamification, notifications. Vanilla JS, no build step. |
 | `parser.js` | Offline Egyptian Arabic parser: "فكرني…" text → tasks (day, time, repeat, person, category, big-task). Unit-testable in Node. |
-| `api/parse.js` | Vercel function. Claude parses messy transcripts and breaks big tasks into steps. Needs `ANTHROPIC_API_KEY`. |
+| `api/parse.js` | Vercel function. An LLM on Groq parses transcripts into tasks (one request = one task, notes, priority), edits existing tasks by voice, and breaks big tasks into steps. Needs `GROQ_API_KEY`. |
+| `api/transcribe.js` | Vercel function. Whisper on Groq turns recorded audio into text. Needs `GROQ_API_KEY`. |
 | `sw.js` | Service worker: offline cache + notification click/push handlers. Bump `CACHE` on every release. |
 | `manifest.webmanifest`, `icons/` | PWA install metadata. |
 
@@ -41,9 +42,9 @@ Data is stored in `localStorage` key `fakkarny:v1`, on the device only, with exp
 - Reminders: notifications fire **only while the app is open or recently backgrounded**, plus one-tap "add to Calendar" (.ics) for alarms that always work.
 
 ## Known gaps / next steps (priority order)
-1. **Set `ANTHROPIC_API_KEY`** in Vercel → project `fakkarny` → Settings → Environment Variables, then redeploy. Without it, the on-device parser is used (fine for clear sentences, weaker on messy speech).
+1. **AI runs on Groq (free tier).** `api/parse.js` uses `openai/gpt-oss-120b` with strict JSON schema and `api/transcribe.js` uses Whisper large-v3, both with `GROQ_API_KEY` (already set in Vercel). Switch parsing to Claude Haiku once there are paying users.
 2. **Real background push** (the biggest gap on iPhone). Generate VAPID keys, add a `/api/subscribe` endpoint that stores the PushSubscription plus the task schedule (Vercel KV/Upstash or Supabase), and run a scheduler every minute (Upstash QStash or Supabase cron) that sends web-push. `sw.js` already handles `push` events.
-3. **Better Egyptian speech-to-text.** Browser recognition is weak on Egyptian dialect. Record audio with MediaRecorder and send it to `/api/transcribe` (ElevenLabs Scribe or Whisper), then pass the text to `/api/parse`.
+3. **Speech-to-text: done.** The app records with MediaRecorder and sends audio to `api/transcribe.js` (Whisper large-v3 on Groq, free tier then about $0.11 per audio hour). Set `GROQ_API_KEY` in Vercel. Without it the app falls back to the browser recognizer.
 4. **Accounts + sync** (Supabase) so data survives a phone change; needed before charging money.
 5. **Real squads/family sharing** (shared streaks, "who lost the week buys koshary"). This needs accounts first.
 6. **WhatsApp reminders** as the fallback channel (WhatsApp Business API via a provider; budget for per-message cost).

@@ -1,25 +1,26 @@
 // فكرني — AI parser. Turns an Egyptian Arabic voice transcript into tasks,
 // or breaks a big task into small steps before its deadline.
-// Needs ANTHROPIC_API_KEY in the Vercel project env. Without it the app
-// silently falls back to the on-device parser (parser.js).
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
+// Runs on Groq's free tier (gpt-oss-120b, strict JSON schema). Needs GROQ_API_KEY in the
+// Vercel project env. Without it the app silently falls back to the on-device parser (parser.js).
+const KEY = process.env.GROQ_API_KEY;
+const MODEL = "openai/gpt-oss-120b";
 
 const TASK = {
   type: "object",
   properties: {
     title: { type: "string", description: "Short task title in Egyptian Arabic, no date/time words, first person verb ok (e.g. 'اتصل بماما', 'ميعاد الدكتور')" },
-    emoji: { type: "string", description: "One fitting emoji" },
+    emoji: { type: "string", description: "One fitting emoji, used as the task icon" },
     category: { type: "string", enum: ["health", "appointment", "people", "fitness", "water", "study", "errand", "work", "faith", "other"] },
     date: { type: ["string", "null"], description: "YYYY-MM-DD or null if no day implied" },
     time: { type: ["string", "null"], description: "HH:MM 24h or null" },
     repeat: { type: "string", enum: ["none", "daily", "weekly", "monthly"] },
     person: { type: ["string", "null"], description: "Person to call/visit if any" },
+    priority: { type: "string", enum: ["normal", "high"], description: "high when the user says top priority, مهم, ضروري, أولوية, urgent" },
+    notes: { type: "string", description: "Every concrete detail the user gave (amounts, accounts, banks, names, places, numbers), in Egyptian Arabic, short lines separated by newlines. Empty string if none." },
     isBig: { type: "boolean", description: "True for big tasks people procrastinate on (report, project, exam, presentation)" },
     steps: { type: "array", items: { type: "string" }, description: "For big tasks only: 3-5 tiny concrete steps in Egyptian Arabic; else empty" },
   },
-  required: ["title", "emoji", "category", "date", "time", "repeat", "person", "isBig", "steps"],
+  required: ["title", "emoji", "category", "date", "time", "repeat", "person", "priority", "notes", "isBig", "steps"],
   additionalProperties: false,
 };
 
@@ -27,9 +28,28 @@ const PARSE_SCHEMA = {
   type: "object",
   properties: {
     tasks: { type: "array", items: TASK },
-    reply: { type: "string", description: "One short, warm, funny Egyptian Arabic confirmation line" },
+    updates: {
+      type: "array",
+      description: "Changes to tasks the user already has (listed in the request). Empty if the user only adds new things.",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          remove: { type: "boolean", description: "true to delete the task" },
+          done: { type: "boolean", description: "true if the user says they finished it" },
+          date: { type: ["string", "null"], description: "new YYYY-MM-DD, or null to keep" },
+          time: { type: ["string", "null"], description: "new HH:MM, or null to keep" },
+          priority: { type: ["string", "null"], enum: ["normal", "high", null] },
+          addNote: { type: ["string", "null"], description: "detail to append to the task's notes, or null" },
+          summary: { type: "string", description: "What changed, in a few Egyptian Arabic words, e.g. 'خليتها الساعة ١١'" },
+        },
+        required: ["id", "remove", "done", "date", "time", "priority", "addNote", "summary"],
+        additionalProperties: false,
+      },
+    },
+    reply: { type: "string", description: "One short confirmation line. Spoken Egyptian Arabic like a friend texting (حطيت، شلت، فكرتك; never تم or MSA), max 10 words, no emoji, no ellipsis, no MSA words, no slogans" },
   },
-  required: ["tasks", "reply"],
+  required: ["tasks", "updates", "reply"],
   additionalProperties: false,
 };
 
@@ -59,51 +79,61 @@ const PARSE_SYSTEM = `You are the brain of "فكرني", an Egyptian reminders a
 Extract every separate thing they want to be reminded of as a task.
 Rules:
 - Resolve relative days (النهارده، بكرة، بعد بكرة، يوم الخميس، الأسبوع الجاي، أول الشهر) against the given current date/time.
-- Egyptian time defaults: "الساعة ٣" with no period means 15:00; 8-11 with no period mean morning; الصبح=AM, الضهر≈13:00, العصر≈16:00, المغرب≈18:00, بالليل≈21:00, قبل النوم≈23:00.
+- Egyptian time defaults: "الساعة ٣" with no period means 15:00; 8-11 with no period mean morning, unless that hour already passed today and the evening one has not (at 17:30 "الساعة ١٠ النهارده" = 22:00); الصبح=AM, الضهر≈13:00, العصر≈16:00, المغرب≈18:00, بالليل≈21:00, قبل النوم≈23:00.
 - If a later item in the same sentence has no day, it usually shares the previous item's day.
 - If only a time is given and it already passed today, use tomorrow.
 - Titles: short, natural Egyptian Arabic, no filler (فكرني، عايز، لازم، ان) and no date/time words.
 - "كل يوم" => daily, "كل جمعة/أسبوع" => weekly, "كل شهر" => monthly.
+- ONE request = ONE task. A long sentence that explains a single thing (who, how much, from which account, why) is one task: put the explanation in notes and keep the title short. Only make several tasks when the user asks for different things to happen.
+  Example: "فكرني إني لسه محول لدكتور أيمن من صيدلية السلامة خمسين ألف من حساب CIB بتاع الصيدلية وعشرين ألف من السيفينجز في QNB، فكرني بيهم الساعة عشرة النهارده وخليها توب بريوريتي" => one task, title "أتابع تحويل دكتور أيمن (صيدلية السلامة)", time 10:00 today, priority high, notes "٥٠,٠٠٠ ج من حساب CIB بتاع الصيدلية\n٢٠,٠٠٠ ج من السيفينجز في QNB\nالإجمالي ٧٠,٠٠٠ ج".
+- Keep numbers, amounts, bank and account names exactly as said. Fix obvious speech-to-text spelling mistakes in Egyptian words; write bank names and English terms in Latin letters (CIB, QNB, savings).
+- If the user refers to something they already have (in the existing tasks list), e.g. "خلي ميعاد دكتور أيمن الساعة ١١" or "شيل تذكير الجيم" or "خلصت التحويل", return it in updates with that task's id instead of creating a new task.
 - Never invent tasks that were not said.`;
 
-const BREAKDOWN_SYSTEM = `You are the anti-procrastination coach of "فكرني". Break the user's big task into 3-6 tiny, concrete, non-scary steps (each 10-45 minutes) spread across the days from today until ONE DAY BEFORE the real deadline (a safety buffer). The first step must be doable in 5-10 minutes today. Write step titles in short Egyptian Arabic. Reply line: one motivating, slightly funny Egyptian sentence.`;
+const BREAKDOWN_SYSTEM = `You are the anti-procrastination coach of "فكرني". Break the user's big task into 3-6 tiny, concrete, non-scary steps (each 10-45 minutes) spread across the days from today until ONE DAY BEFORE the real deadline (a safety buffer). The first step must be doable in 5-10 minutes today. Write step titles in short Egyptian Arabic. Reply line: one sentence. Spoken Egyptian Arabic like a friend texting (حطيت، شلت، فكرتك; never تم or MSA), max 10 words, no emoji, no ellipsis, no MSA words, no slogans.`;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
-  if (!client) return res.status(503).json({ error: "no_api_key" });
+  if (!KEY) return res.status(503).json({ error: "no_api_key" });
 
-  const { mode = "parse", text = "", now, weekday, task, deadline } = req.body || {};
+  const { mode = "parse", text = "", now, weekday, task, deadline, existing = [] } = req.body || {};
   if (mode === "parse" && (!text || text.length > 4000)) return res.status(400).json({ error: "bad_text" });
+  const open = (Array.isArray(existing) ? existing : []).slice(0, 60)
+    .map((t) => `${t.id} | ${String(t.title || "").slice(0, 80)} | ${t.date || "-"} ${t.time || ""}`).join("\n");
 
   const context = `Current local date/time: ${now} (${weekday}).`;
   const isBreakdown = mode === "breakdown";
+  const user = isBreakdown
+    ? `${context}\nBig task: ${task}\nReal deadline: ${deadline}`
+    : `${context}\nExisting tasks (id | title | date time):\n${open || "none"}\n\nVoice note:\n${text}`;
 
   try {
-    const response = await client.beta.messages.create({
-      model: "claude-opus-5-5",
-      max_tokens: 4000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: {
-        effort: "low",
-        format: { type: "json_schema", schema: isBreakdown ? BREAKDOWN_SCHEMA : PARSE_SCHEMA },
-      },
-      system: isBreakdown ? BREAKDOWN_SYSTEM : PARSE_SYSTEM,
-      messages: [{
-        role: "user",
-        content: isBreakdown
-          ? `${context}\nBig task: ${task}\nReal deadline: ${deadline}`
-          : `${context}\nVoice note:\n${text}`,
-      }],
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: MODEL,
+        temperature: 0.2,
+        reasoning_effort: "medium",
+        max_completion_tokens: 4000,
+        messages: [
+          { role: "system", content: isBreakdown ? BREAKDOWN_SYSTEM : PARSE_SYSTEM },
+          { role: "user", content: user },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: isBreakdown ? "breakdown" : "parse", strict: true, schema: isBreakdown ? BREAKDOWN_SCHEMA : PARSE_SCHEMA },
+        },
+      }),
     });
-
-    if (response.stop_reason === "refusal") return res.status(422).json({ error: "refused" });
-    const block = response.content.find((b) => b.type === "text");
-    if (!block) return res.status(502).json({ error: "empty" });
-    return res.status(200).json({ ...JSON.parse(block.text), source: "ai" });
+    if (r.status === 429) return res.status(429).json({ error: "rate_limited" });
+    if (!r.ok) return res.status(502).json({ error: "upstream", status: r.status });
+    const data = await r.json();
+    const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if (!content) return res.status(502).json({ error: "empty" });
+    return res.status(200).json({ ...JSON.parse(content), source: "ai" });
   } catch (err) {
-    if (err instanceof Anthropic.RateLimitError) return res.status(429).json({ error: "rate_limited" });
-    if (err instanceof Anthropic.APIError) return res.status(502).json({ error: "upstream", status: err.status });
+    console.error("parse_failed", err && err.message);
     return res.status(500).json({ error: "parse_failed" });
   }
 }

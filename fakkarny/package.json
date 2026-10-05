@@ -1,8 +1,5 @@
 {
   "name": "fakkarny",
   "private": true,
-  "type": "module",
-  "dependencies": {
-    "@anthropic-ai/sdk": "latest"
-  }
+  "type": "module"
 }
