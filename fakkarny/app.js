@@ -1321,22 +1321,66 @@
       });
     });
     schedulePrayers();
+    syncPush();
     var et = (S.profile.eodTime || '00:00').split(':'), eod = new Date(); eod.setHours(+et[0], +et[1], 0, 0); if (eod.getTime() <= now) eod = addDays(eod, 1); var ems = eod.getTime() - now;
-    if (ems > 0 && S.tasks.length) timers.push(setTimeout(function () { if (S.reviews[reviewDayKey()]) return; notify('🌙 قفّل يومك', 'دقيقة تراجع فيها النهارده وتخطط لبكرة', 'eod'); if (document.visibilityState === 'visible') { toast('🌙', '<b>قفّل يومك</b> وخطط لبكرة'); render(); } }, ems));
+    if (ems > 0 && S.tasks.length) timers.push(setTimeout(function () { if (S.reviews[reviewDayKey()]) return; if (!S.profile.push) notify('🌙 قفّل يومك', 'دقيقة تراجع فيها النهارده وتخطط لبكرة', 'eod'); if (document.visibilityState === 'visible') { toast('🌙', '<b>قفّل يومك</b> وخطط لبكرة'); render(); } }, ems));
   }
   function schedulePrayers() {
     var pg = S.goals.filter(isPrayerGoal)[0]; if (!pg) return;
     var times = prayerTimes(), now = Date.now(); if (!times) return;
     times.forEach(function (p) {
       var ms = p.at.getTime() - now;
-      if (ms > 0) timers.push(setTimeout(function () { var m = (pg.marks && pg.marks[today()]) || {}; if (m[p.id]) return; notify('🤲 ' + p.name, 'جه وقت ' + p.name, 'prayer-' + p.id); if (document.visibilityState === 'visible') { toast('🤲', 'جه وقت <b>' + p.name + '</b>'); sfx('ping'); renderGoals(); } }, ms));
+      if (ms > 0) timers.push(setTimeout(function () { var m = (pg.marks && pg.marks[today()]) || {}; if (m[p.id]) return; if (!S.profile.push) notify('🤲 ' + p.name, 'جه وقت ' + p.name, 'prayer-' + p.id); if (document.visibilityState === 'visible') { toast('🤲', 'جه وقت <b>' + p.name + '</b>'); sfx('ping'); renderGoals(); } }, ms));
     });
+  }
+  // ---- background push: reminders reach the phone even when the app is closed ----
+  // The server holds the next 3 days of reminders; the app resyncs on every change and on open.
+  function urlB64(b) { var p = '='.repeat((4 - b.length % 4) % 4), s = atob((b + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
+  function pushCapable() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && Notification.permission === 'granted' && location.protocol === 'https:'; }
+  function ensurePush() {
+    if (!pushCapable()) return Promise.resolve(null);
+    return fetch('/api/push').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || !j.ok || !j.publicKey) return null;
+      return navigator.serviceWorker.ready.then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (sub) { return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(j.publicKey) }); });
+      });
+    }).then(function (sub) {
+      if (sub) { if (!S.profile.device) S.profile.device = uid().replace(/[^a-z0-9]/gi, ''); if (!S.profile.push) { S.profile.push = true; save(); } }
+      return sub;
+    }).catch(function () { return null; });
+  }
+  function pushItems() {
+    var out = [], now = Date.now(), pg = S.goals.filter(isPrayerGoal)[0];
+    for (var off = 0; off < 3; off++) {
+      var k = dk(addDays(new Date(), off));
+      dayTasks(k).forEach(function (t) {
+        var tm = timeOn(t, k); if (!tm || isDone(t, k)) return;
+        var p = tm.split(':'), at = parseDk(k); at.setHours(+p[0], +p[1], 0, 0); if (at.getTime() <= now) return;
+        if (t.send) out.push({ id: t.id + '|' + k, at: at.getTime(), title: 'ابعت لـ' + (t.send.to || 'حد') + ' دلوقتي', body: t.send.text, url: waLink(t.send) });
+        else out.push({ id: t.id + '|' + k, at: at.getTime(), title: t.emoji + ' ' + t.title, body: say('ping') });
+      });
+      var pt = pg ? prayerTimes(k) : null;
+      if (pt) pt.forEach(function (p) { if (p.at.getTime() > now && !(pg.marks && pg.marks[k] && pg.marks[k][p.id])) out.push({ id: 'pr' + p.id + '|' + k, at: p.at.getTime(), title: '🤲 ' + p.name, body: 'جه وقت ' + p.name }); });
+    }
+    var et = (S.profile.eodTime || '00:00').split(':'), e = new Date(); e.setHours(+et[0], +et[1], 0, 0); if (e.getTime() <= now) e = addDays(e, 1);
+    var rk = e.getHours() < 5 ? dk(addDays(e, -1)) : dk(e);
+    if (S.tasks.length && !S.reviews[rk]) out.push({ id: 'eod|' + rk, at: e.getTime(), title: '🌙 قفّل يومك', body: 'دقيقة تراجع فيها يومك وتخطط لبكرة' });
+    return out;
+  }
+  var pushT = null;
+  function syncPush() {
+    clearTimeout(pushT);
+    pushT = setTimeout(function () {
+      ensurePush().then(function (sub) {
+        if (!sub) return;
+        fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync', device: S.profile.device, sub: sub.toJSON(), items: pushItems() }) }).catch(function () { });
+      });
+    }, 1200);
   }
   function ping(t, k) {
     if (isDone(t, k)) return;
     t.pinged = t.pinged || {}; t.pinged[k] = 1; save();
-    if (t.send) notify('ابعت لـ' + (t.send.to || 'حد') + ' دلوقتي', t.send.text, t.id, waLink(t.send));
-    else notify(t.emoji + ' ' + t.title, say('ping'), t.id);
+    if (!S.profile.push) { if (t.send) notify('ابعت لـ' + (t.send.to || 'حد') + ' دلوقتي', t.send.text, t.id, waLink(t.send)); else notify(t.emoji + ' ' + t.title, say('ping'), t.id); }
     if (document.visibilityState === 'visible') { toast(t.emoji, '<b>' + esc(t.title) + '</b>، ' + say('ping')); sfx('ping'); buzz([30, 60, 30]); render(); }
   }
   function catchUp() {

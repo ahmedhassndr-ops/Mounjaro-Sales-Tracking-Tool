@@ -1,5 +1,5 @@
 // فكرني service worker: offline shell + notifications.
-const CACHE = 'fakkarny-v11';
+const CACHE = 'fakkarny-v12';
 const SHELL = ['./', './index.html', './app.js', './parser.js', './adhan.min.js', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png', './fonts/readex-pro-arabic-400-normal.woff2', './fonts/readex-pro-arabic-500-normal.woff2', './fonts/readex-pro-arabic-700-normal.woff2', './fonts/readex-pro-arabic-600-normal.woff2' ];
 
 self.addEventListener('install', (e) => {
@@ -35,7 +35,7 @@ self.addEventListener('push', (e) => {
   let data = {};
   try { data = e.data ? e.data.json() : {}; } catch (_) { data = { body: e.data && e.data.text() }; }
   e.waitUntil(self.registration.showNotification(data.title || 'فكرني', {
-    body: data.body || '', tag: data.tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: data,
+    body: data.body || '', tag: data.tag, renotify: !!data.tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: data,
   }));
 });
 
