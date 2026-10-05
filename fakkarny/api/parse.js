@@ -172,7 +172,10 @@ Build a small, realistic starter plan they can actually keep:
 - reminders.items: 2-6 recurring or one-off reminders with sensible times (medicine at a fixed time daily, call family weekly, weekly money review, a daily slot for the thing they keep postponing). No times between 00:00 and 07:00.
 - Fewer, achievable items beat many. Nothing the user did not imply.
 - intro: 1-2 short lines in spoken Egyptian Arabic, warm, no emoji, no MSA, no slogans.
-All titles short, natural Egyptian Arabic. One emoji per item.`;
+- target is how many TIMES per period, never minutes: "أمشي ٣٠ دقيقة" is target 1 per day; water is 8 per day.
+- Never put the same thing in both lists: medicine and fixed-time things are reminders, habits you count are goals.
+- Titles: short first-person spoken Egyptian verbs, like the user would say them: آخد الدوا، أذاكر ساعة ديزاين، أمشي ٣٠ دقيقة، أوزن نفسي. Never MSA forms like أخذ، خذ، دراسة، مراجعة الوزن.
+One emoji per item.`;
 
 const PARSE_SYSTEM = `You are the brain of "فكرني", an Egyptian reminders app. The user dictated a voice note (speech-to-text, may be messy, Egyptian dialect, may mix English).
 Extract every separate thing they want to be reminded of as a task.
