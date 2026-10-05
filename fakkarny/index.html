@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>فكرني</title>
-<meta name="description" content="قول وأنا أفتكرلك. رتّب يومك وأهدافك بصوتك">
+<meta name="description" content="قول اللي وراك بالعامية، وفكرني ينبّهك في ميعاده حتى والتطبيق مقفول">
 <meta name="theme-color" content="#F6F2EA" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#15130F" media="(prefers-color-scheme: dark)">
 <link rel="preload" href="fonts/readex-pro-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -507,6 +507,10 @@ input,textarea{caret-color:var(--brand)}
 .tip{display:flex;gap:10px;align-items:center;padding:10px 12px;margin:4px 0 2px;border-radius:14px;background:var(--surface2);font-size:13.5px;line-height:1.6;color:var(--ink)}
 .tip span{flex:1}
 .tip button{font-weight:600;color:var(--brand);font-size:13.5px;padding:6px 4px}
+.onb-pts{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.onb-pts li{position:relative;padding-inline-start:22px;font-size:15.5px;line-height:1.6}
+.onb-pts li::before{content:"";position:absolute;inset-inline-start:2px;top:.62em;width:8px;height:8px;border-radius:3px;background:var(--brand)}
+.onb-trust{margin-top:12px;font-size:13.5px;color:var(--mute)}
 /* numbers carry the game: rounded display face, lining up */
 .ring .v,.dpill .d,.stat .n,.eod-stats b,.chip-streak,.lvl-av .n,.xpline,.goal p,.pr small{font-variant-numeric:tabular-nums}
 .top h1{font-size:25px;font-weight:700}

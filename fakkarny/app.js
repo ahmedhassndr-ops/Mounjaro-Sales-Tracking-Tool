@@ -62,7 +62,7 @@
   var LINES = {
     sarcastic: {
       empty: ['النهارده فاضي؟ ولا إنت ناسي حاجة؟ دوس المايك وقول.', 'مفيش ولا حاجة متسجلة يا {name}. مش مصدقك.', 'قول اللي في دماغك قبل ما تنساه.'],
-      left: ['لسه {n} مستنيينك. مش هيخلصوا لوحدهم يا باشا.', '{n} حاجات ولسه بتقلّب في الموبايل. أنا شايفك.', 'خلّص واحدة بس دلوقتي وأنا هسكت.', 'كل ما تأجّلها بتتقل عليك. خلّصها وارتاح.'],
+      left: ['لسه {n} مستنيينك. مش هيخلصوا لوحدهم يا باشا.', '{n} حاجات ولسه بتقلّب في الموبايل. أنا شايفك.', 'خلّص واحدة بس دلوقتي وأنا هسكت.', 'عندك {n}. ابدأ بأصغر واحدة.'],
       overdue: ['عندك {n} متأخرين. التأجيل بقى هواية ولا إيه؟', '"{task}" مستنياك من كام يوم. اعملها دلوقتي وخد ١٥ نقطة زيادة.'],
       allDone: ['خلّصت كله؟ إنت مين وعملت إيه في {name}؟', 'خلاص، اليوم خلص. نام وإنت مرتاح.'],
       done: ['أيوه كده.', 'إيه ده، إنت بتخلّص حاجات؟', 'طلعت بتعرف أهو.', 'كمّل كده يا {name}.', 'حلو. اللي بعده.'],
@@ -74,13 +74,13 @@
     mom: {
       empty: ['يومك فاضي يا حبيبي؟ قولّي ناوي على إيه وأنا أفتكرلك.', 'مفيش حاجة النهارده؟ طب اشرب مية الأول.'],
       left: ['فاضلك {n} يا قلبي. واحدة واحدة.', 'ربنا يقويك يا {name}، قربت تخلص.', 'كمّل يا حبيبي، أنا عارفة إنك تقدر.'],
-      overdue: ['في {n} اتأخروا شوية. مش مشكلة، نعملهم دلوقتي؟'],
+      overdue: ['في {n} اتأخروا شوية. نعملهم دلوقتي؟'],
       allDone: ['ما شاء الله، خلّصت كله. أنا فخورة بيك.', 'يومك كله تمام يا حبيبي.'],
       done: ['برافو عليك يا حبيبي.', 'ربنا يباركلك.', 'شاطر يا {name}.', 'كده أنا مبسوطة منك.'],
       snooze: ['ماشي يا حبيبي، بس متنساش.', 'خد راحتك، هفكّرك تاني.'],
       voice: ['حاضر يا قلبي، كتبتلك {n} ومش هسيبك تنساهم.'],
       ping: ['يا حبيبي جه وقتها.', 'متنساش يا قلبي.'],
-      skipped: ['يا حبيبي "{task}" بقاله {miss} أيام مستنيك. النهارده بس، عشان خاطري.', 'بقالك {miss} أيام ناسي "{task}". مش مشكلة، نبدأ من النهارده.']
+      skipped: ['يا حبيبي "{task}" بقاله {miss} أيام مستنيك. النهارده بس، عشان خاطري.', 'بقالك {miss} أيام ناسي "{task}". نبدأ من النهارده؟']
     },
     sergeant: {
       empty: ['مفيش مهام؟ إنت مش في أجازة. دوس المايك حالًا.'],
@@ -452,7 +452,7 @@
     }
     if (isToday) { var nh = nudgesHTML(); if (nh) h += '<div class="sec"><h3>متنساش</h3></div>' + nh; }
     if (isIOS && !isStandalone && !S.profile.hideInstall) {
-      h += '<div class="nudge" style="margin-top:18px"><div class="e">📲</div><div class="t">ضيف فكرني للشاشة الرئيسية عشان يفتح زي أي أبلكيشن وتوصلك الإشعارات</div><button class="chunky" data-act="install">إزاي؟</button></div>';
+      h += '<div class="nudge" style="margin-top:18px"><div class="e">📲</div><div class="t">ضيفه للشاشة الرئيسية عشان التنبيهات توصلك</div><button class="chunky" data-act="install">وريني إزاي</button></div>';
     }
     el.innerHTML = h;
     bindSwipes(el);
@@ -688,12 +688,12 @@
       '<button class="rowbtn" data-act="notif"><span class="e">🔔</span><span>الإشعارات</span><small>' + notifLabel() + '</small></button>' +
       '<button class="rowbtn" data-act="automic"><span class="e">🎙️</span><span>يسمعك أول ما تفتحه</span><small>' + (S.profile.autoMic ? 'شغال' : 'مقفول') + '</small></button>' +
       '<button class="rowbtn" data-act="sound"><span class="e">' + (S.profile.sound ? '🔊' : '🔇') + '</span><span>الأصوات</span><small>' + (S.profile.sound ? 'شغالة' : 'مقفولة') + '</small></button>' +
-      '<button class="rowbtn" data-act="rename"><span class="e">✏️</span><span>اسمي</span><small>' + esc(S.profile.name || '—') + '</small></button>' +
+      '<button class="rowbtn" data-act="rename"><span class="e">✏️</span><span>اسمي</span><small>' + esc(S.profile.name || 'من غير اسم') + '</small></button>' +
       (isIOS && !isStandalone ? '<button class="rowbtn" data-act="install"><span class="e">📲</span><span>ضيفه للشاشة الرئيسية</span><small>زي الأبلكيشن</small></button>' : '') +
       '<button class="rowbtn" data-act="export"><span class="e">💾</span><span>احفظ نسخة من بياناتي</span><small>ملف</small></button>' +
       '<button class="rowbtn" data-act="import"><span class="e">📥</span><span>رجّع نسخة قديمة</span><small>من ملف</small></button>' +
       '<button class="rowbtn" data-act="reset" style="color:var(--red)"><span class="e">🗑️</span><span>امسح كل حاجة وابدأ من الأول</span></button>' +
-      '<p style="text-align:center;color:var(--dim);font-size:12px;margin:18px 0 4px">فكرني، نسخة تجريبية. بياناتك على موبايلك بس.</p>';
+      '<p style="text-align:center;color:var(--dim);font-size:12px;margin:18px 0 4px">فكرني، نسخة تجريبية. مهامك محفوظة على موبايلك، ومواعيد التنبيهات بس بتروح للسيرفر عشان توصلك.</p>';
     el.innerHTML = h;
   }
   function notifLabel() {
@@ -722,8 +722,8 @@
   }
   function eodCardHTML() {
     if (!eodWindow()) return '';
-    if (S.reviews[reviewDayKey()]) return '<div class="nudge eod done"><div class="e">🌙</div><div class="t">قفلت يومك. <b>خطة بكرة جاهزة.</b></div><button class="chunky" data-act="eod">شوفها</button></div>';
-    return '<div class="nudge eod"><div class="e">🌙</div><div class="t"><b>قفّل يومك</b><br><small>شوف عملت إيه، وخطّط لبكرة في دقيقة</small></div><button class="chunky" data-act="eod">يلا</button></div>';
+    if (S.reviews[reviewDayKey()]) return '<div class="nudge eod done"><div class="e">🌙</div><div class="t">قفلت يومك. <b>خطة بكرة جاهزة.</b></div><button class="chunky" data-act="eod">شوف الخطة</button></div>';
+    return '<div class="nudge eod"><div class="e">🌙</div><div class="t"><b>قفّل يومك</b><br><small>شوف عملت إيه، وخطّط لبكرة في دقيقة</small></div><button class="chunky" data-act="eod">راجع يومك</button></div>';
   }
   var eodChoice = {};
   function openEOD() {
@@ -781,7 +781,7 @@
   }
   function localFeedback(d) {
     var n = d.done.length, m = d.missed.length;
-    var a = n ? 'خلّصت ' + ar(n) + (n === 1 ? ' حاجة' : ' حاجات') + ' النهارده، ودي بداية.' : 'النهارده مخلّصتش حاجة. بس إنك قاعد تراجع يومك، دي لوحدها حاجة.';
+    var a = n ? 'خلّصت ' + ar(n) + (n === 1 ? ' حاجة' : ' حاجات') + ' النهارده.' : 'النهارده مخلّصتش حاجة.';
     var b = d.snoozes >= 2 ? 'أجّلت ' + ar(d.snoozes) + ' مرات. بكرة ابدأ بأتقل حاجة الصبح قبل ما تفتح الموبايل.' : m ? 'بكرة ابدأ بأول حاجة في الخطة قبل أي حاجة تانية.' : 'كمّل بنفس الشكل بكرة.';
     return a + '\n' + b;
   }
@@ -793,7 +793,7 @@
         return '<div class="eod-row plan"><span class="n">' + ar(i + 1) + '</span><span>' + esc(p.title) + '</span>' + (p.priority === 'high' ? '<span class="tag hi">مهم</span>' : '') + '<small>' + (p.time ? fmtTime(p.time) : 'أي وقت') + '</small></div>';
       }).join('') + '</div>';
     } else h += '<p style="color:var(--mute);margin-top:12px">مفيش حاجة متشالة لبكرة. قول اللي وراك بالمايك.</p>';
-    h += '<div class="acts">' + (rv.applied ? '<button class="act full" data-x="close">تمام</button>' : '<button class="act pri full" data-x="apply">اعتمد الخطة</button><button class="act full" data-x="close">بعدين</button>') + '</div>';
+    h += '<div class="acts">' + (rv.applied ? '<button class="act full" data-x="close">اقفل</button>' : '<button class="act pri full" data-x="apply">اعتمد الخطة</button><button class="act full" data-x="close">بعدين</button>') + '</div>';
     openSheet(h, function (root) {
       $$('[data-x]', root).forEach(function (b) {
         b.onclick = function () {
@@ -968,7 +968,7 @@
       '<div><b>٢</b><span>دوس على زرار المشاركة <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4DA3FF" stroke-width="2" style="vertical-align:-3px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v8h14v-8"/></svg> تحت</span></div>' +
       '<div><b>٣</b><span>اختار <b>Add to Home Screen</b> ثم <b>Add</b></span></div></div>' +
       '<p style="color:var(--mute);line-height:1.7;margin-top:14px;font-size:14px">بعدها افتح فكرني من الأيقونة وفعّل الإشعارات من صفحة "أنا".</p>' +
-      '<div class="acts" style="margin-top:14px"><button class="act" data-x="hide">متفكرنيش تاني</button><button class="act pri" data-x="ok">تمام</button></div>', function (root) {
+      '<div class="acts" style="margin-top:14px"><button class="act" data-x="hide">متفكرنيش تاني</button><button class="act pri" data-x="ok">فهمت</button></div>', function (root) {
       $$('[data-x]', root).forEach(function (b) { b.onclick = function () { if (b.dataset.x === 'hide') { S.profile.hideInstall = true; save(); render(); } closeSheet(); }; });
     });
   }
@@ -1302,7 +1302,7 @@
     var el = $('#focus');
     el.innerHTML = '<div class="fs">خمس دقايق بس. لو عايز تقف بعدها، اقف.</div><div class="ft">' + esc(t.emoji) + ' ' + esc((currentStep(t) || {}).t || t.title) + '</div>' +
       '<div class="clock">' + '<svg width="240" height="240" viewBox="0 0 250 250"><circle cx="125" cy="125" r="112" fill="none" style="stroke:var(--track)" stroke-width="14"/><circle id="fArc" cx="125" cy="125" r="112" fill="none" style="stroke:var(--brand)" stroke-width="14" stroke-linecap="round" stroke-dasharray="703.7" stroke-dashoffset="0"/></svg><div class="v" id="fV">05:00</div></div>' +
-      '<div class="fs" id="fMsg">' + pick(['اشتغل عليها خمس دقايق وبعدين نشوف.', 'سيب الموبايل خمس دقايق، مش هيطير.', 'أول دقيقة هي اللي تقيلة.']) + '</div>' +
+      '<div class="fs" id="fMsg">' + pick(['اشتغل عليها خمس دقايق وبعدين نشوف.', 'سيب الموبايل خمس دقايق، مش هيطير.', 'ابدأ بأسهل جزء فيها.']) + '</div>' +
       '<div class="fb"><button class="btn" id="fPause">وقّف</button><button class="btn pri" id="fDoneB">خلصتها</button></div><button class="btn ghost" id="fClose" style="max-width:360px;width:100%;flex:none">اقفل</button>';
     el.classList.add('open');
     $('#fPause').onclick = function () { fPaused = !fPaused; this.textContent = fPaused ? 'كمّل' : 'وقّف'; };
@@ -1320,7 +1320,7 @@
       clearInterval(fTimer); S.stats.focus++; logActivity(1);
       addXP(10, innerWidth / 2, innerHeight / 2); burst(innerWidth / 2, innerHeight / 2, 120); sfx('level'); buzz(40);
       checkBadges(); save();
-      notify('خلصت ' + ar(Math.round(fTotal / 60)) + ' دقايق', 'بدأت، وده كان أصعب جزء.');
+      notify('خلصت ' + ar(Math.round(fTotal / 60)) + ' دقايق', 'اشتغلت خمس دقايق. كمّل لو تقدر.');
       $('#fMsg').innerHTML = '<b>عدّوا الخمس دقايق.</b> تكمّل ٢٠ كمان؟';
       $('#fPause').textContent = '＋ ٢٠ دقيقة'; $('#fPause').onclick = function () { fTotal = fLeft = 20 * 60; fPaused = false; this.textContent = 'وقّف'; this.onclick = function () { fPaused = !fPaused; this.textContent = fPaused ? 'كمّل' : 'وقّف'; }; clearInterval(fTimer); fTimer = setInterval(tickFocus, 1000); $('#fMsg').textContent = 'ماشي، ٢٠ دقيقة.'; };
     }
@@ -1481,7 +1481,7 @@
   function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (_) { } }
   function levelUp(n) {
     var li = lvlInfo(S.stats.xp), el = $('#levelup');
-    el.innerHTML = '<div class="box"><div class="e">' + li.face + '</div><h2>المستوى ' + ar(n) + '</h2><p>بقيت <b style="color:var(--text)">' + li.title + '</b><br>' + esc(say('done')) + '</p><button class="btn pri" style="width:100%" id="luOk">كمّل</button></div>';
+    el.innerHTML = '<div class="box"><div class="e">' + li.face + '</div><h2>المستوى ' + ar(n) + '</h2><p>بقيت <b style="color:var(--text)">' + li.title + '</b><br>' + esc(say('done')) + '</p><button class="btn pri" style="width:100%" id="luOk">كمّل يومك</button></div>';
     el.classList.add('open'); burst(innerWidth / 2, innerHeight / 2.4, 260); sfx('level'); buzz([40, 50, 80]);
     $('#luOk').onclick = function () { el.classList.remove('open'); render(); };
   }
@@ -1558,10 +1558,10 @@
     function show() {
       var h = '<div class="onb"><div class="bg-glow"></div>';
       if (step === 0) {
-        h += '<div class="pg"><div class="logo">فكرني</div><h2>قول، وأنا أفتكرلك.</h2><p>قول اللي وراك بصوتك. فكرني يكتبه ويفكّرك بيه في ميعاده، ويفضل وراك لحد ما تخلّصه.</p>' +
+        h += '<div class="pg"><div class="logo">فكرني</div><h2>قولها مرة، وأنا أفكّرك في ميعادها.</h2><ul class="onb-pts"><li>اتكلم بالعامية، وقول كذا حاجة في جملة واحدة.</li><li>التنبيه يوصلك والتطبيق مقفول.</li><li>لو أجّلت، المدرب يفضل وراك لحد ما تخلّص.</li></ul>' +
           '<div class="bubbles"><div class="bb me" style="animation-delay:.3s">🎙 فكرني بكرة الساعة ٣ عندي ميعاد دكتور، وأكلم ماما بالليل</div>' +
           '<div class="bb" style="animation-delay:1.1s">تمام يا باشا<br>🩺 ميعاد الدكتور، بكرة ٣:٠٠ العصر<br>❤️ أكلم ماما، بكرة ٩:٠٠ بالليل</div>' +
-          '<div class="bb" style="animation-delay:1.9s">وكل حاجة تخلّصها بتاخد عليها نقط وتطلع مستوى.</div></div></div>' + dots() + '<button class="nextb" id="oN">يلا نبدأ</button>';
+          '</div><p class="onb-trust">من غير حساب ولا باسورد. بتبدأ على طول.</p></div>' + dots() + '<button class="nextb" id="oN">ابدأ وسجّل أول حاجة</button>';
       } else if (step === 1) {
         h += '<div class="pg"><h2>أناديك بإيه؟</h2><p>عشان المدرب يكلمك باسمك.</p><input class="name" id="oName" placeholder="اسمك" value="' + esc(S.profile.name) + '" autocomplete="given-name"></div>' + dots() + '<button class="nextb" id="oN">كمّل</button>';
       } else if (step === 2) {
@@ -1589,9 +1589,9 @@
         }
       } else {
         if (isIOS && !isStandalone) {
-          h += '<div class="pg"><h2>حطه على الشاشة الرئيسية</h2><p>من غير App Store. عشان يفتح بلمسة وتوصلك الإشعارات:</p><div class="ios-steps"><div><b>١</b><span>دوس زرار المشاركة <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4DA3FF" stroke-width="2" style="vertical-align:-3px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v8h14v-8"/></svg> في Safari</span></div><div><b>٢</b><span>اختار <b>Add to Home Screen</b></span></div><div><b>٣</b><span>افتح فكرني من الأيقونة الجديدة</span></div></div></div>' + dots() + '<button class="nextb" id="oN">تمام</button>';
+          h += '<div class="pg"><h2>حطه على الشاشة الرئيسية</h2><p>الآيفون مش بيبعت تنبيهات غير كده. ٣ خطوات من غير App Store:</p><div class="ios-steps"><div><b>١</b><span>دوس زرار المشاركة <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4DA3FF" stroke-width="2" style="vertical-align:-3px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v8h14v-8"/></svg> في Safari</span></div><div><b>٢</b><span>اختار <b>Add to Home Screen</b></span></div><div><b>٣</b><span>افتح فكرني من الأيقونة الجديدة</span></div></div></div>' + dots() + '<button class="nextb" id="oN">تمام</button>';
         } else {
-          h += '<div class="pg"><h2>أفكّرك إزاي وإنت قافله؟</h2><p>فعّل الإشعارات عشان أبعتلك في ميعاد كل حاجة. ولو قافل التطبيق خالص، تقدر تضيف أي مهمة للتقويم.</p></div>' + dots() + '<button class="nextb" id="oNotif">فعّل الإشعارات</button><button class="skip" id="oN">بعدين</button>';
+          h += '<div class="pg"><h2>عشان التنبيه يوصلك والتطبيق مقفول</h2><p>فعّل الإشعارات. من غيرها هفكّرك بس وإنت فاتح التطبيق.</p></div>' + dots() + '<button class="nextb" id="oNotif">فعّل الإشعارات</button><button class="skip" id="oN">بعدين</button>';
         }
       }
       h += '</div>';

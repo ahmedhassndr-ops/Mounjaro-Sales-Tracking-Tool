@@ -1,4 +1,4 @@
-// فكرني — AI parser. Turns an Egyptian Arabic voice transcript into tasks,
+// فكرني: AI parser. Turns an Egyptian Arabic voice transcript into tasks,
 // or breaks a big task into small steps before its deadline.
 // Runs on Groq's free tier (gpt-oss-120b, strict JSON schema). Needs GROQ_API_KEY in the
 // Vercel project env. Without it the app silently falls back to the on-device parser (parser.js).
